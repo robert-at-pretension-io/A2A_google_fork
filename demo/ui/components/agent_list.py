@@ -3,7 +3,7 @@ import pandas as pd
 
 from common.types import AgentCard
 from state.agent_state import AgentState
-from state.host_agent_service import DeleteRemoteAgent
+from state.host_agent_service import DeleteRemoteAgent, ListRemoteAgents
 
 
 @me.component
