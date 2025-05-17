@@ -5,6 +5,7 @@
 ## Prerequisites
 
 1. Install Tilt:
+
    ```bash
    # macOS
    brew install tilt-dev/tap/tilt
@@ -20,11 +21,13 @@
 ## Running with Tilt
 
 1. From the project root, run:
+
    ```bash
    tilt up
    ```
 
 2. Tilt will:
+
    - Build all required Docker images
    - Start the A2A UI and all agents
    - Open the UI in your browser automatically (http://localhost:12001)
@@ -51,6 +54,7 @@
 When running with Tilt, agents register themselves using their Docker service names (not IP addresses or localhost). This ensures proper service discovery within the Docker network.
 
 The agent URLs in the Docker environment are:
+
 - `http://agent-google-adk:10002/`
 - `http://agent-elevenlabs-tts:10005/`
 - `http://agent-vertex-image-gen:10006/`
@@ -60,9 +64,12 @@ This is controlled by the `A2A_SERVICE_HOST` environment variable which is set i
 ### Registering Agents
 
 After the UI and agents are running, go to the "Remote Agents" tab in the UI and add:
+
 - agent-google-adk:10002
 - agent-elevenlabs-tts:10005
 - agent-vertex-image-gen:10006
+
+When running via Tilt, use the container service names (e.g., `agent-google-adk`) rather than `localhost` for agent addresses.
 
 **Note:** The agent registration process should find the agents at their Docker service names, not at localhost or IP addresses.
 

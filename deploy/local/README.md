@@ -15,10 +15,11 @@ This directory contains Docker Compose configuration for running the A2A demo ap
 2. **Start the services:**
 
    ```bash
-   docker-compose up -d
+   ./run-local-cluster.sh
    ```
 
-   This will start the UI and agent services in the background.
+   Run this script from anywhere (e.g. `deploy/local/run-local-cluster.sh` from the
+   repo root). It builds the images and starts the services in the background.
 
 3. **Access the UI:**
 
