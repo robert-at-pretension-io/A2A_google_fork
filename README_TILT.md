@@ -44,12 +44,27 @@
 - **Unified Logs**: View all service logs in a single interface
 - **Agent Info**: Shows the addresses to use when registering agents in the UI
 
-## Registering Agents
+## Agent Discovery and Networking
+
+### Service Names in Docker/Tilt Environment
+
+When running with Tilt, agents register themselves using their Docker service names (not IP addresses or localhost). This ensures proper service discovery within the Docker network.
+
+The agent URLs in the Docker environment are:
+- `http://agent-google-adk:10002/`
+- `http://agent-elevenlabs-tts:10005/`
+- `http://agent-vertex-image-gen:10006/`
+
+This is controlled by the `A2A_SERVICE_HOST` environment variable which is set in the docker-compose.yaml file.
+
+### Registering Agents
 
 After the UI and agents are running, go to the "Remote Agents" tab in the UI and add:
 - agent-google-adk:10002
 - agent-elevenlabs-tts:10005
 - agent-vertex-image-gen:10006
+
+**Note:** The agent registration process should find the agents at their Docker service names, not at localhost or IP addresses.
 
 ## Customizing Tilt Behavior
 

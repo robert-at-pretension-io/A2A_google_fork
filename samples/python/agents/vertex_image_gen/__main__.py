@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from agent import VertexImageGenAgent
 from common.server import A2AServer
+from common.server.utils import get_service_hostname
 from common.types import (
     AgentCard,
     AgentCapabilities,
@@ -47,6 +48,9 @@ def main(host, port):
             ]
         )
         
+        # Use service hostname from environment if available (for Docker/Tilt)
+        service_host = get_service_hostname(default_host=host)
+        
         agent_card = AgentCard(
             name="Vertex AI Image Generator",
             description="Generates images from text prompts using Google Vertex AI",
@@ -55,7 +59,7 @@ def main(host, port):
             defaultInputModes=["text", "text/plain"],
             defaultOutputModes=["text", "text/plain", "image/png", "image/jpeg"],
             skills=[skill],
-            url=f"http://{host}:{port}/"
+            url=f"http://{service_host}:{port}/"
         )
         
         # Create the agent and task manager
@@ -71,6 +75,8 @@ def main(host, port):
         )
         
         logger.info(f"Starting Vertex AI Image Generator agent at http://{host}:{port}/")
+        # Log the URL that will be used for agent discovery
+        logger.info(f"Agent card URL set to http://{service_host}:{port}/")
         server.start()
     except MissingAPIKeyError as e:
         logger.error(f"Error: {e}")

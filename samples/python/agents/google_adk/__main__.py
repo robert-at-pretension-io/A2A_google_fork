@@ -5,6 +5,7 @@ import click
 
 from agent import ReimbursementAgent
 from common.server import A2AServer
+from common.server.utils import get_service_hostname
 from common.types import (
     AgentCapabilities,
     AgentCard,
@@ -22,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 @click.command()
-@click.option('--host', default='localhost')
-@click.option('--port', default=10002)
+@click.option('--host', default='0.0.0.0', help="Host to run the server on (use 0.0.0.0 for Docker/Kubernetes)")
+@click.option('--port', default=10002, help="Port to run the server on")
 def main(host, port):
     try:
         # Check for API key only if Vertex AI is not configured
@@ -43,10 +44,13 @@ def main(host, port):
                 'Can you reimburse me $20 for my lunch with the clients?'
             ],
         )
+        # Use service hostname from environment if available (for Docker/Tilt)
+        service_host = get_service_hostname(default_host=host)
+        
         agent_card = AgentCard(
             name='Reimbursement Agent',
             description='This agent handles the reimbursement process for the employees given the amount and purpose of the reimbursement.',
-            url=f'http://{host}:{port}/',
+            url=f'http://{service_host}:{port}/',
             version='1.0.0',
             defaultInputModes=ReimbursementAgent.SUPPORTED_CONTENT_TYPES,
             defaultOutputModes=ReimbursementAgent.SUPPORTED_CONTENT_TYPES,
@@ -59,6 +63,10 @@ def main(host, port):
             host=host,
             port=port,
         )
+        
+        logger.info(f"Starting Google ADK agent at http://{host}:{port}/")
+        # Log the URL that will be used for agent discovery
+        logger.info(f"Agent card URL set to http://{service_host}:{port}/")
         server.start()
     except MissingAPIKeyError as e:
         logger.error(f'Error: {e}')

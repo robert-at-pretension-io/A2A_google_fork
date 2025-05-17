@@ -29,6 +29,9 @@ This directory contains Docker Compose configuration for running the A2A demo ap
    In the UI, go to the "Remote Agents" tab and add the agents:
    - `agent-google-adk:10002`
    - `agent-elevenlabs-tts:10005`
+   - `agent-vertex-image-gen:10006` (if using Vertex AI)
+   
+   Note: When running in Docker, agents register using their Docker service names, not localhost or IP addresses. This is controlled by the `A2A_SERVICE_HOST` environment variable in docker-compose.yaml.
 
 ## New Features
 
