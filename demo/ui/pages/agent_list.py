@@ -30,7 +30,7 @@ def agent_list_page(app_state: AppState):
                     me.input(
                         label='Agent Address',
                         on_blur=set_agent_address,
-                        placeholder='localhost:10000',
+                        placeholder='agent-google-adk:10002',
                     )
                     input_modes_string = ', '.join(state.input_modes)
                     output_modes_string = ', '.join(state.output_modes)

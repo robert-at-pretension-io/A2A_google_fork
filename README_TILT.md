@@ -51,6 +51,8 @@ After the UI and agents are running, go to the "Remote Agents" tab in the UI and
 - agent-elevenlabs-tts:10005
 - agent-vertex-image-gen:10006
 
+When running via Tilt, use the container service names (e.g., `agent-google-adk`) rather than `localhost` for agent addresses.
+
 ## Customizing Tilt Behavior
 
 Edit the `Tiltfile` to customize the development workflow:
