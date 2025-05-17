@@ -86,20 +86,27 @@ def add_agent(e: me.ClickEvent):  # pylint: disable=unused-argument
     
 async def on_table_click(e: me.TableClickEvent):
     """Handle table clicks including delete action."""
-    # Get the current agents from the ListRemoteAgents function
-    agents = await ListRemoteAgents()
-    
-    # Build data from current agents
-    df_data = {
-        'Address': [],
-        'Name': [],
-        'Description': [],
-        'Organization': [],
-        'Input Modes': [],
-        'Output Modes': [],
-        'Streaming': [],
-        'Actions': [],
-    }
+    try:
+        # Get the current agents from the ListRemoteAgents function
+        # Using explicit import to avoid any potential issues with closures
+        from state.host_agent_service import ListRemoteAgents
+        agents = await ListRemoteAgents()
+        
+        # Build data from current agents
+        df_data = {
+            'Address': [],
+            'Name': [],
+            'Description': [],
+            'Organization': [],
+            'Input Modes': [],
+            'Output Modes': [],
+            'Streaming': [],
+            'Actions': [],
+        }
+    except Exception as exc:
+        print(f"Error in on_table_click: {exc}")
+        # Return early if we can't get agents
+        return
     
     for agent_info in agents:
         df_data['Address'].append(agent_info.url)
@@ -126,8 +133,14 @@ async def on_table_click(e: me.TableClickEvent):
     # Only handle clicks on the Actions column (for delete)
     if column_name == 'Actions' and row_index < len(df_data['Address']):
         agent_url = df_data['Address'][row_index]
-        # Delete the agent
-        await DeleteRemoteAgent(agent_url)
-        # Yield to trigger UI update
-        yield
+        try:
+            # Import explicitly to avoid NameError
+            from state.host_agent_service import DeleteRemoteAgent
+            # Delete the agent
+            success = await DeleteRemoteAgent(agent_url)
+            print(f"Agent deletion {'succeeded' if success else 'failed'}: {agent_url}")
+            # Yield to trigger UI update
+            yield
+        except Exception as e:
+            print(f"Error deleting agent: {e}")
     yield
