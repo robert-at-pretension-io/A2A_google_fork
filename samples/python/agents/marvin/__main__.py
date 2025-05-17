@@ -30,7 +30,7 @@ class ContactInfo(BaseModel):
 
 
 @click.command()
-@click.option("--host", "host", default="localhost")
+@click.option("--host", "host", default="0.0.0.0", help="Host to run the server on (use 0.0.0.0 for Docker/Kubernetes)")
 @click.option("--port", "port", default=10030)
 @click.option("--result-type", "result_type", default="ContactInfo")
 @click.option(

@@ -162,11 +162,20 @@ class ADKHostManager(ApplicationManager):
         session = self._session_service.get_session(
             app_name='A2A', user_id='test_user', session_id=conversation_id
         )
+        
+        # Check if session exists, create if it doesn't
+        if not session:
+            print(f"Creating new session for conversation_id: {conversation_id}")
+            session = self._session_service.create_session(
+                app_name='A2A', user_id='test_user', session_id=conversation_id
+            )
+        
         # Update state must happen in the event
         state_update = {
             'input_message_metadata': message.metadata,
             'session_id': conversation_id,
         }
+        
         last_message_id = get_last_message_id(message)
         if (
             last_message_id
@@ -182,16 +191,33 @@ class ADKHostManager(ApplicationManager):
             )
         ):
             state_update['task_id'] = self._task_map[last_message_id]
+            
         # Need to upsert session state now, only way is to append an event.
-        self._session_service.append_event(
-            session,
-            ADKEvent(
-                id=ADKEvent.new_id(),
-                author='host_agent',
-                invocation_id=ADKEvent.new_id(),
-                actions=ADKEventActions(state_delta=state_update),
-            ),
-        )
+        try:
+            self._session_service.append_event(
+                session,
+                ADKEvent(
+                    id=ADKEvent.new_id(),
+                    author='host_agent',
+                    invocation_id=ADKEvent.new_id(),
+                    actions=ADKEventActions(state_delta=state_update),
+                ),
+            )
+        except Exception as e:
+            print(f"Error appending event to session: {e}")
+            # Create a new session and try again if there was an error
+            session = self._session_service.create_session(
+                app_name='A2A', user_id='test_user', session_id=conversation_id
+            )
+            self._session_service.append_event(
+                session,
+                ADKEvent(
+                    id=ADKEvent.new_id(),
+                    author='host_agent',
+                    invocation_id=ADKEvent.new_id(),
+                    actions=ADKEventActions(state_delta=state_update),
+                ),
+            )
         async for event in self._host_runner.run_async(
             user_id=self.user_id,
             session_id=conversation_id,
@@ -412,6 +438,44 @@ class ADKHostManager(ApplicationManager):
             ),
             None,
         )
+        
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation by ID and all related messages and tasks."""
+        conversation = self.get_conversation(conversation_id)
+        if not conversation:
+            return False
+            
+        # Remove conversation
+        self._conversations = [c for c in self._conversations if c.conversation_id != conversation_id]
+        
+        # Remove related messages
+        self._messages = [
+            m for m in self._messages 
+            if not (m.metadata and m.metadata.get("conversation_id") == conversation_id)
+        ]
+        
+        # Remove related tasks
+        related_task_ids = []
+        for task in self._tasks:
+            if task.metadata and task.metadata.get("conversation_id") == conversation_id:
+                related_task_ids.append(task.id)
+                
+        self._tasks = [t for t in self._tasks if t.id not in related_task_ids]
+        
+        # Remove from task map
+        for message_id, task_id in list(self._task_map.items()):
+            if task_id in related_task_ids:
+                del self._task_map[message_id]
+                
+        return True
+        
+    def delete_agent(self, agent_url: str) -> bool:
+        """Delete an agent by URL."""
+        original_count = len(self._agents)
+        self._agents = [a for a in self._agents if a.url != agent_url]
+        
+        # Return True if an agent was actually removed
+        return len(self._agents) < original_count
 
     def get_pending_messages(self) -> list[tuple[str, str]]:
         rval = []
@@ -495,6 +559,63 @@ class ADKHostManager(ApplicationManager):
         self, content: types.Content, conversation_id: str
     ) -> Message:
         parts: list[Part] = []
+        
+        # Log the content type to help trace warning origin
+        print(f"Converting ADK content with {len(content.parts)} parts to message, role: {content.role}")
+        print(f"Conversation ID: {conversation_id}")
+        
+        # Check for non-text parts in the response
+        non_text_parts = []
+        for i, part in enumerate(content.parts):
+            # Log every part's type information
+            print(f"Part {i} details:")
+            print(f"  - Has text attribute: {hasattr(part, 'text')}")
+            if hasattr(part, 'text'):
+                print(f"  - Text content (truncated): {str(part.text)[:50]}...")
+            
+            # Log all available attributes on the part
+            part_attrs = {}
+            for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
+                has_attr = hasattr(part, attr)
+                part_attrs[attr] = has_attr
+                if has_attr:
+                    attr_value = getattr(part, attr)
+                    print(f"  - Has {attr}: {bool(attr_value)}")
+                    if attr_value:
+                        try:
+                            if hasattr(attr_value, 'model_dump'):
+                                attr_info = attr_value.model_dump()
+                                print(f"  - {attr} details: {json.dumps(attr_info, indent=2)[:200]}...")
+                            elif isinstance(attr_value, dict):
+                                print(f"  - {attr} keys: {list(attr_value.keys())}")
+                            else:
+                                print(f"  - {attr} type: {type(attr_value).__name__}")
+                        except Exception as e:
+                            print(f"  - Error inspecting {attr}: {str(e)}")
+            
+            # Track non-text parts
+            if not hasattr(part, 'text') or not part.text:
+                part_type = 'unknown'
+                for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
+                    if hasattr(part, attr) and getattr(part, attr):
+                        part_type = attr
+                        break
+                non_text_parts.append(part_type)
+                print(f"  - Identified as non-text part: {part_type}")
+        
+        if non_text_parts:
+            print(f"Warning: there are non-text parts in the response: {non_text_parts}")
+            print("Returning concatenated text result from text parts")
+            print("Check out the non text parts for full response from model")
+            print(f"Agent error debug information - Non-text parts found: {len(non_text_parts)}")
+            
+            # Log additional debugging info about the connection refused error
+            if "function_call" in non_text_parts:
+                print("DEBUG: function_call found in response parts, which may be related to the warning")
+                print("This typically happens when a function is called but there's an issue with the agent connection")
+                print("Check if ElevenLabs TTS agent is running at the expected URL (http://localhost:10005/)")
+                print("Connection refused errors often indicate the service is not running or not accessible")
+            
         if not content.parts:
             return Message(
                 parts=[],
@@ -534,8 +655,26 @@ class ADKHostManager(ApplicationManager):
             elif part.executable_code:
                 parts.append(DataPart(data=part.executable_code.model_dump()))
             elif part.function_call:
+                print(f"WARNING: Found function_call in response: {part.function_call.name}")
+                print(f"Function call details: {json.dumps(part.function_call.model_dump(), indent=2)}")
+                
+                # Get detailed info about the function call
+                func_details = part.function_call.model_dump()
+                print(f"Function call name: {func_details.get('name', 'unknown')}")
+                print(f"Function call args: {json.dumps(func_details.get('args', {}), indent=2)}")
+                
+                # Log agent connection information
+                if part.function_call.name == "send_task" and "agent_name" in func_details.get('args', {}):
+                    agent_name = func_details['args'].get('agent_name')
+                    print(f"DEBUG: Attempting to call agent: {agent_name}")
+                    print(f"Connection errors may indicate this agent ({agent_name}) is not running or not accessible")
+                    print(f"Check if the agent is registered and running at the expected URL")
+                    print(f"Known agents: {[agent.name for agent in self._agents]}")
+                
                 parts.append(DataPart(data=part.function_call.model_dump()))
             elif part.function_response:
+                print(f"WARNING: Found function_response in response")
+                print(f"Function response details: {json.dumps(part.function_response.model_dump(), indent=2)}")
                 parts.extend(
                     self._handle_function_response(part, conversation_id)
                 )
@@ -552,16 +691,26 @@ class ADKHostManager(ApplicationManager):
     ) -> list[Part]:
         parts = []
         try:
-            for p in part.function_response.response['result']:
+            print(f"Processing function response with {len(part.function_response.response.get('result', []))} result items")
+            
+            for i, p in enumerate(part.function_response.response.get('result', [])):
+                print(f"Processing function response item {i}, type: {type(p).__name__}")
+                
                 if isinstance(p, str):
+                    print(f"Item {i} is string: '{p[:50]}...' (truncated)")
                     parts.append(TextPart(text=p))
                 elif isinstance(p, dict):
+                    print(f"Item {i} is dict with keys: {list(p.keys())}")
                     if 'type' in p and p['type'] == 'file':
+                        print(f"Item {i} is a file part")
                         parts.append(FilePart(**p))
                     else:
+                        print(f"Item {i} is a data part")
                         parts.append(DataPart(data=p))
                 elif isinstance(p, DataPart):
+                    print(f"Item {i} is DataPart with data keys: {list(p.data.keys())}")
                     if 'artifact-file-id' in p.data:
+                        print(f"Item {i} contains artifact-file-id: {p.data['artifact-file-id']}")
                         file_part = self._artifact_service.load_artifact(
                             user_id=self.user_id,
                             session_id=conversation_id,
@@ -584,9 +733,18 @@ class ADKHostManager(ApplicationManager):
                     else:
                         parts.append(DataPart(data=p.data))
                 else:
+                    print(f"Item {i} is unknown type: {type(p)}, converting to JSON string")
                     parts.append(TextPart(text=json.dumps(p)))
+            
+            print(f"Function response produced {len(parts)} parts")
+            for i, part in enumerate(parts):
+                print(f"Result part {i} is type: {part.type}")
+            
         except Exception as e:
-            print("Couldn't convert to messages:", e)
+            print(f"Couldn't convert function response to messages: {e}")
+            import traceback
+            traceback.print_exc()
+            print(f"Original function response: {json.dumps(part.function_response.model_dump(), indent=2)}")
             parts.append(DataPart(data=part.function_response.model_dump()))
         return parts
 

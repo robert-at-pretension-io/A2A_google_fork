@@ -181,3 +181,6 @@ Demonstrates how to implement a travel agent built on [Semantic Kernel](https://
 
 * [**ElevenLabs TTS Agent**](/samples/python/agents/elevenlabs_tts/README.md)  
 Converts text to speech using the ElevenLabs API. Showcases handling and returning audio files through A2A.
+
+* [**Vertex AI Image Generator**](/samples/python/agents/vertex_image_gen/README.md)  
+Generates images from text prompts using Google Cloud Vertex AI. Showcases image generation and returning image files through A2A.

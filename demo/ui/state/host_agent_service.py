@@ -10,6 +10,8 @@ from service.client.client import ConversationClient
 from service.types import (
     Conversation,
     CreateConversationRequest,
+    DeleteAgentRequest,
+    DeleteConversationRequest,
     Event,
     GetEventRequest,
     ListAgentRequest,
@@ -76,6 +78,28 @@ async def AddRemoteAgent(path: str):
         await client.register_agent(RegisterAgentRequest(params=path))
     except Exception as e:
         print('Failed to register the agent', e)
+        
+        
+async def DeleteRemoteAgent(agent_url: str) -> bool:
+    """Delete an agent by URL."""
+    client = ConversationClient(server_url)
+    try:
+        response = await client.delete_agent(DeleteAgentRequest(params=agent_url))
+        return response.result
+    except Exception as e:
+        print('Failed to delete agent:', e)
+        return False
+        
+        
+async def DeleteConversation(conversation_id: str) -> bool:
+    """Delete a conversation by ID."""
+    client = ConversationClient(server_url)
+    try:
+        response = await client.delete_conversation(DeleteConversationRequest(params=conversation_id))
+        return response.result
+    except Exception as e:
+        print('Failed to delete conversation:', e)
+        return False
 
 
 async def GetEvents() -> list[Event]:

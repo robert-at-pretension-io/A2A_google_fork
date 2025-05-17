@@ -13,6 +13,7 @@ members = [
     "a2a-sample-agent-adk",
     "a2a-sample-agent-elevenlabs",
     "a2a-sample-agent-langgraph",
+    "a2a-sample-agent-vertex-image-gen",
     "a2a-sample-client-cli",
     "a2a-sample-client-multiagent",
     "a2a-samples",
@@ -103,6 +104,27 @@ requires-dist = [
     { name = "langgraph", specifier = ">=0.3.18" },
     { name = "pydantic", specifier = ">=2.10.6" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
+]
+
+[[package]]
+name = "a2a-sample-agent-vertex-image-gen"
+version = "0.1.0"
+source = { editable = "agents/vertex_image_gen" }
+dependencies = [
+    { name = "a2a-samples" },
+    { name = "click" },
+    { name = "google-cloud-aiplatform" },
+    { name = "python-dotenv" },
+    { name = "tenacity" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "a2a-samples", editable = "." },
+    { name = "click", specifier = ">=8.1.8" },
+    { name = "google-cloud-aiplatform", specifier = ">=1.36.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "tenacity", specifier = ">=8.2.0" },
 ]
 
 [[package]]

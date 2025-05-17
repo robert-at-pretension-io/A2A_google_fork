@@ -19,12 +19,17 @@ from common.types import (
     GetTaskRequest,
     GetTaskResponse,
     JSONRPCRequest,
+    Message,
     SendTaskRequest,
     SendTaskResponse,
     SendTaskStreamingRequest,
     SendTaskStreamingResponse,
     SetTaskPushNotificationRequest,
     SetTaskPushNotificationResponse,
+    TaskStatus,
+    TaskState,
+    TaskStatusUpdateEvent,
+    TextPart,
 )
 
 
@@ -52,16 +57,73 @@ class A2AClient:
     ) -> AsyncIterable[SendTaskStreamingResponse]:
         request = SendTaskStreamingRequest(params=payload)
         with httpx.Client(timeout=None) as client:
-            with connect_sse(
-                client, 'POST', self.url, json=request.model_dump()
-            ) as event_source:
-                try:
-                    for sse in event_source.iter_sse():
-                        yield SendTaskStreamingResponse(**json.loads(sse.data))
-                except json.JSONDecodeError as e:
-                    raise A2AClientJSONError(str(e)) from e
-                except httpx.RequestError as e:
-                    raise A2AClientHTTPError(400, str(e)) from e
+            try:
+                with connect_sse(
+                    client, 'POST', self.url, json=request.model_dump()
+                ) as event_source:
+                    try:
+                        for sse in event_source.iter_sse():
+                            try:
+                                # Log the raw response data for debugging
+                                print(f"DEBUG: Received SSE data: {sse.data[:200]}...") # Truncate to avoid huge logs
+                                
+                                # Parse the JSON data
+                                json_data = json.loads(sse.data)
+                                
+                                # Check for key parts of the response that might cause validation issues
+                                if "result" in json_data:
+                                    result = json_data["result"]
+                                    print(f"DEBUG: SSE result type: {type(result).__name__}")
+                                    
+                                    # Check for TaskStatusUpdateEvent validation issues
+                                    if "status" in result and "state" in result["status"]:
+                                        state = result["status"]["state"]
+                                        print(f"DEBUG: Task state value: {state}")
+                                        if state.upper() == "FAILED":
+                                            print("WARNING: Task state 'FAILED' should be lowercase 'failed' to comply with TaskState enum")
+                                    
+                                    # Check for TaskArtifactUpdateEvent validation issues
+                                    if "artifact" in result:
+                                        print(f"DEBUG: Artifact data present with keys: {list(result['artifact'].keys()) if isinstance(result['artifact'], dict) else 'not a dict'}")
+                                        
+                                # Create and return the response object
+                                yield SendTaskStreamingResponse(**json_data)
+                                
+                            except Exception as validation_error:
+                                # Log detailed validation errors but still propagate them
+                                print(f"ERROR: Validation error processing SSE data: {str(validation_error)}")
+                                print(f"Raw data that caused the error: {sse.data}")
+                                
+                                # Re-raise to maintain original behavior
+                                raise
+                                
+                    except json.JSONDecodeError as e:
+                        print(f"ERROR: JSON decode error: {str(e)}")
+                        print(f"Invalid JSON data: {sse.data if 'sse' in locals() else 'No SSE data available'}")
+                        raise A2AClientJSONError(str(e)) from e
+                    except httpx.RequestError as e:
+                        print(f"ERROR: HTTP request error: {str(e)}")
+                        raise A2AClientHTTPError(400, str(e)) from e
+            except (httpx.ConnectError, ConnectionRefusedError) as e:
+                # Handle connection errors more gracefully
+                print(f"Connection to agent at {self.url} failed: {str(e)}")
+                # Return a minimal response indicating connection failure
+                # Create a properly formatted TaskStatusUpdateEvent
+                yield SendTaskStreamingResponse(
+                    jsonrpc="2.0",
+                    id="connection_error",
+                    result=TaskStatusUpdateEvent(
+                        id=payload.get("id", "unknown"),
+                        status=TaskStatus(
+                            state=TaskState.FAILED,
+                            message=Message(
+                                role="agent",
+                                parts=[TextPart(text=f"Could not connect to agent at {self.url}: {str(e)}")]
+                            )
+                        ),
+                        final=True
+                    )
+                )
 
     async def _send_request(self, request: JSONRPCRequest) -> dict[str, Any]:
         async with httpx.AsyncClient() as client:

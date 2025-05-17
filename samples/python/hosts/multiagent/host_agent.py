@@ -147,69 +147,91 @@ Current agent: {current_agent['active_agent']}
         Yields:
           A dictionary of JSON data.
         """
-        if agent_name not in self.remote_agent_connections:
-            raise ValueError(f'Agent {agent_name} not found')
-        state = tool_context.state
-        state['agent'] = agent_name
-        card = self.cards[agent_name]
-        client = self.remote_agent_connections[agent_name]
-        if not client:
-            raise ValueError(f'Client not available for {agent_name}')
-        if 'task_id' in state:
-            taskId = state['task_id']
-        else:
-            taskId = str(uuid.uuid4())
-        sessionId = state['session_id']
-        task: Task
-        messageId = ''
-        metadata = {}
-        if 'input_message_metadata' in state:
-            metadata.update(**state['input_message_metadata'])
-            if 'message_id' in state['input_message_metadata']:
-                messageId = state['input_message_metadata']['message_id']
-        if not messageId:
-            messageId = str(uuid.uuid4())
-        metadata.update(conversation_id=sessionId, message_id=messageId)
-        request: TaskSendParams = TaskSendParams(
-            id=taskId,
-            sessionId=sessionId,
-            message=Message(
-                role='user',
-                parts=[TextPart(text=message)],
-                metadata=metadata,
-            ),
-            acceptedOutputModes=['text', 'text/plain', 'image/png'],
-            # pushNotification=None,
-            metadata={'conversation_id': sessionId},
-        )
-        task = await client.send_task(request, self.task_callback)
-        # Assume completion unless a state returns that isn't complete
-        state['session_active'] = task.status.state not in [
-            TaskState.COMPLETED,
-            TaskState.CANCELED,
-            TaskState.FAILED,
-            TaskState.UNKNOWN,
-        ]
-        if task.status.state == TaskState.INPUT_REQUIRED:
-            # Force user input back
-            tool_context.actions.skip_summarization = True
-            tool_context.actions.escalate = True
-        elif task.status.state == TaskState.CANCELED:
-            # Open question, should we return some info for cancellation instead
-            raise ValueError(f'Agent {agent_name} task {task.id} is cancelled')
-        elif task.status.state == TaskState.FAILED:
-            # Raise error for failure
-            raise ValueError(f'Agent {agent_name} task {task.id} failed')
-        response = []
-        if task.status.message:
-            # Assume the information is in the task message.
-            response.extend(
-                convert_parts(task.status.message.parts, tool_context)
+        try:
+            if agent_name not in self.remote_agent_connections:
+                return [f"Error: Agent '{agent_name}' not found. Available agents: {list(self.remote_agent_connections.keys())}"] 
+                
+            state = tool_context.state
+            state['agent'] = agent_name
+            card = self.cards[agent_name]
+            client = self.remote_agent_connections[agent_name]
+            
+            if not client:
+                return [f"Error: Client not available for '{agent_name}'"] 
+                
+            if 'task_id' in state:
+                taskId = state['task_id']
+            else:
+                taskId = str(uuid.uuid4())
+                
+            sessionId = state['session_id']
+            task: Task
+            messageId = ''
+            metadata = {}
+            
+            if 'input_message_metadata' in state:
+                metadata.update(**state['input_message_metadata'])
+                if 'message_id' in state['input_message_metadata']:
+                    messageId = state['input_message_metadata']['message_id']
+                    
+            if not messageId:
+                messageId = str(uuid.uuid4())
+                
+            metadata.update(conversation_id=sessionId, message_id=messageId)
+            request: TaskSendParams = TaskSendParams(
+                id=taskId,
+                sessionId=sessionId,
+                message=Message(
+                    role='user',
+                    parts=[TextPart(text=message)],
+                    metadata=metadata,
+                ),
+                acceptedOutputModes=['text', 'text/plain', 'image/png', 'audio/mpeg'],
+                # pushNotification=None,
+                metadata={'conversation_id': sessionId},
             )
-        if task.artifacts:
-            for artifact in task.artifacts:
-                response.extend(convert_parts(artifact.parts, tool_context))
-        return response
+            
+            task = await client.send_task(request, self.task_callback)
+            
+            # Handle failed connection or task error
+            if not task or task.status.state == TaskState.FAILED:
+                error_message = f"Failed to communicate with agent '{agent_name}'"
+                if task and task.status.message and task.status.message.parts:
+                    for part in task.status.message.parts:
+                        if hasattr(part, 'text') and part.text:
+                            error_message = part.text
+                return [error_message]
+            
+            # Assume completion unless a state returns that isn't complete
+            state['session_active'] = task.status.state not in [
+                TaskState.COMPLETED,
+                TaskState.CANCELED,
+                TaskState.FAILED,
+                TaskState.UNKNOWN,
+            ]
+            
+            if task.status.state == TaskState.INPUT_REQUIRED:
+                # Force user input back
+                tool_context.actions.skip_summarization = True
+                tool_context.actions.escalate = True
+            elif task.status.state == TaskState.CANCELED:
+                # Return cancellation info instead of raising error
+                return [f"Task canceled: Agent '{agent_name}' task {task.id} was cancelled"]
+                
+            response = []
+            if task.status.message:
+                # Assume the information is in the task message.
+                response.extend(
+                    convert_parts(task.status.message.parts, tool_context)
+                )
+            if task.artifacts:
+                for artifact in task.artifacts:
+                    response.extend(convert_parts(artifact.parts, tool_context))
+                    
+            return response
+        except Exception as e:
+            print(f"Error in send_task for agent '{agent_name}': {str(e)}")
+            return [f"Error communicating with agent '{agent_name}': {str(e)}"]
 
 
 def convert_parts(parts: list[Part], tool_context: ToolContext):
@@ -227,15 +249,36 @@ def convert_part(part: Part, tool_context: ToolContext):
     if part.type == 'file':
         # Repackage A2A FilePart to google.genai Blob
         # Currently not considering plain text as files
-        file_id = part.file.name
-        file_bytes = base64.b64decode(part.file.bytes)
-        file_part = types.Part(
-            inline_data=types.Blob(
-                mime_type=part.file.mimeType, data=file_bytes
+        file_id = part.file.name or f"file-{uuid.uuid4()}"
+        
+        # For non-text parts, we need to decode the content
+        if part.file.bytes:
+            file_bytes = base64.b64decode(part.file.bytes)
+            file_part = types.Part(
+                inline_data=types.Blob(
+                    mime_type=part.file.mimeType, data=file_bytes
+                )
             )
-        )
-        tool_context.save_artifact(file_id, file_part)
-        tool_context.actions.skip_summarization = True
-        tool_context.actions.escalate = True
-        return DataPart(data={'artifact-file-id': file_id})
+            tool_context.save_artifact(file_id, file_part)
+            
+            # For audio files, provide a more descriptive text response
+            if part.file.mimeType and 'audio' in part.file.mimeType:
+                tool_context.actions.skip_summarization = True
+                tool_context.actions.escalate = True
+                return f"[Audio file generated successfully. Type: {part.file.mimeType}]"
+            # For images, also provide a descriptive text
+            elif part.file.mimeType and 'image' in part.file.mimeType:
+                tool_context.actions.skip_summarization = True
+                tool_context.actions.escalate = True
+                return f"[Image file generated successfully. Type: {part.file.mimeType}]"
+            # For other file types
+            else:
+                tool_context.actions.skip_summarization = True
+                tool_context.actions.escalate = True
+                return DataPart(data={'artifact-file-id': file_id})
+        # For URI-based files
+        elif part.file.uri:
+            tool_context.actions.skip_summarization = True
+            tool_context.actions.escalate = True
+            return f"[File available at: {part.file.uri}]"
     return f'Unknown type: {part.type}'

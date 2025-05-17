@@ -43,6 +43,7 @@ As AI agents become more prevalent, their ability to interoperate is crucial for
 - 🎬 Use our [samples](/samples) to see A2A in action
   - [Multi-Agent Web App](/demo/README.md)
   - CLI ([Python](/samples/python/hosts/cli/README.md), [JS](/samples/js/README.md))
+  - [Local Docker Deployment](/deploy/local/README.md)
 - 🤖 Use our [sample agents](/samples/python/agents/README.md) to see how to bring A2A to agent frameworks
   - [Agent Development Kit (ADK)](/samples/python/agents/google_adk/README.md)
   - [CrewAI](/samples/python/agents/crewai/README.md)
@@ -53,6 +54,28 @@ As AI agents become more prevalent, their ability to interoperate is crucial for
   - [Marvin](/samples/python/agents/marvin/README.md)
   - [Semantic Kernel](/samples/python/agents/semantickernel/README.md)
   - [AG2 + MCP](/samples/python/agents/ag2/README.md)
+
+## Troubleshooting
+
+### Common Issues
+
+#### Docker/Network Connectivity Issues
+
+If you're running the Docker deployment and seeing errors like "Connection refused" or warnings about "non-text parts in the response":
+
+1. **Agent Networking:** Ensure agents bind to `0.0.0.0` (not just localhost) when running in Docker containers.
+2. **Port Configuration:** Verify port mappings in `docker-compose.yaml` match the agent configuration and documentation.
+3. **Agent Registration:** Make sure you're using the correct host:port combinations when registering agents in the UI.
+
+See the [Docker deployment troubleshooting section](/deploy/local/README.md#troubleshooting) for detailed steps.
+
+#### Agent Communication Errors
+
+If agents are running but cannot communicate:
+
+1. **Content Types:** Ensure the `acceptedOutputModes` in requests match the agent's capabilities.
+2. **API Keys:** Verify that required API keys (like ELEVENLABS_API_KEY) are properly set in environment variables.
+3. **Authentication:** Check that any required authentication is properly configured.
 
 ## Contributing
 

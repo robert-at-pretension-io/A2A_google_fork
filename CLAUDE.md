@@ -16,20 +16,46 @@ _A guide for any AI assistant collaborating on this codebase_
    - …other ecosystems as applicable.
 3. **Install all dependencies using the project’s package-manager**, e.g.
 
-   | Ecosystem | Typical command                                                |
-   | --------- | -------------------------------------------------------------- |
-   | Node.js   | `npm ci --ignore-scripts` or `pnpm i --frozen-lockfile`        |
-   | Python    | `pip install -r requirements.txt` / `poetry install --no-root` |
-   | Rust      | `cargo fetch`                                                  |
-   | Go        | `go mod download`                                              |
-   | Java      | `./gradlew downloadAll`                                        |
-   | Generic   | `./scripts/bootstrap.sh` (run if present)                      |
+   | Ecosystem | Typical command                                                     |
+   | --------- | ------------------------------------------------------------------- |
+   | Node.js   | `npm ci --ignore-scripts` &vert; `pnpm i --frozen-lockfile`         |
+   | Python    | `pip install -r requirements.txt` &vert; `poetry install --no-root` |
+   | Rust      | `cargo fetch`                                                       |
+   | Go        | `go mod download`                                                   |
+   | Java      | `./gradlew downloadAll`                                             |
+   | Generic   | `./scripts/bootstrap.sh` (run if present)                           |
 
 4. **Bootstrap sub-tools** (e.g., Git hooks, pre-commit, Husky) by executing any `./scripts/setup*` script at repo root.
 
 ---
 
-## 2 Documentation & Source Alignment
+## 2 Command-Line Investigation & Toolbox
+
+> **Default to the CLI.** Rapid, scriptable diagnosis beats point-and-click.
+
+| Task                 | Preferred tools (examples)                                    |
+| -------------------- | ------------------------------------------------------------- |
+| Search / slice files | `grep`, `ripgrep (rg)`, `awk`, `sed`, `jq`                    |
+| Find files / dirs    | `fd`, `find`, `tree`, `ls -R`                                 |
+| Shell scripting      | `bash`, `zsh`, POSIX sh (keep scripts portable)               |
+| Process inspection   | `ps`, `top`, `htop`, `lsof`, `strace`                         |
+| Networking           | `curl`, `httpie`, `dig`, `netstat`, `ss`                      |
+| Containers           | `docker`, `docker compose`, `podman`                          |
+| Orchestration        | `kubectl`, `helm`, `kind`, `k9s`                              |
+| Build runners        | `make`, `just`, language-native CLIs                          |
+| Log inspection       | `grep -i error`, `stern`, `kubectl logs -f`, `docker logs -f` |
+
+**Guidelines**
+
+1. **Replicate first.** Use `docker compose up` or `kind create cluster` to reproduce issues locally before coding.
+2. **Automate inspection.** Prefer one-off shell scripts (`scripts/diagnose-*.sh`) to ad-hoc commands—commit them for reuse.
+3. **Keep scripts portable.** Stick to POSIX utilities; gate GNU-specific features behind checks.
+4. **Document useful snippets.** Add them to `/docs/cli-recipes.md` (create if absent).
+5. **Fail fast.** Every CLI diagnostic script must exit non-zero on detectable failure.
+
+---
+
+## 3 Documentation & Source Alignment
 
 > **Code is the ground truth.** Documentation is a guide that must accurately _reflect_ the codebase.
 
@@ -43,7 +69,7 @@ _A guide for any AI assistant collaborating on this codebase_
 
 ---
 
-## 3 Coding Principles (Immutable Axioms)
+## 4 Coding Principles (Immutable Axioms)
 
 1. **Correctness First** – Code must meet spec & pass tests _before_ speed or style tweaks.
 2. **Readable by Strangers** – Any competent engineer understands a function’s intent in ≤ 60 s.
@@ -65,17 +91,17 @@ _A guide for any AI assistant collaborating on this codebase_
 
 ---
 
-## 4 Iterative, Multi-Turn Workflow
+## 5 Iterative, Multi-Turn Workflow
 
-1. **Work in cycles.** Typical flow: **Plan → Act (tool calls) → Observe → Reflect → Repeat**.
-2. **Break tasks into atomic steps.** Each cycle should accomplish a clear, verifiable chunk—don’t attempt the entire feature at once.
-3. **Checkpoint often.** After each cycle, ensure tests pass and code/doc alignment is preserved.
+1. **Work in cycles.** Typical loop: **Plan → Act (CLI/tool calls) → Observe → Reflect → Repeat**.
+2. **Atomic steps.** Each cycle should accomplish a clear, verifiable chunk—don’t attempt the entire feature at once.
+3. **Checkpoint often.** After each cycle, run tests and ensure doc/code alignment.
 4. **Commit early & small.** Frequent, focussed commits simplify review and rollback.
 5. **Use experiments wisely.** Spikes or throw-away prototypes are allowed but must be clearly marked and deleted or cleaned up before merge.
 
 ---
 
-## 5 Autonomous Agency Guidelines
+## 6 Autonomous Agency Guidelines
 
 | Permission                       | Expectations                                                                                                        |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -89,7 +115,7 @@ _Use this autonomy to accelerate progress **without** waiving any axiom._
 
 ---
 
-## 6 Proactive Axiom Enforcement
+## 7 Proactive Axiom Enforcement
 
 | Step                          | What you do                                                                        |
 | ----------------------------- | ---------------------------------------------------------------------------------- |
@@ -101,7 +127,7 @@ _Use this autonomy to accelerate progress **without** waiving any axiom._
 
 ---
 
-## 7 Verification Commands
+## 8 Verification Commands
 
 Before opening a pull request:
 

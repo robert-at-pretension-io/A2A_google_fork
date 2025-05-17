@@ -8,6 +8,8 @@ from common.types import FileContent, FilePart, Message
 from fastapi import APIRouter, Request, Response
 from service.types import (
     CreateConversationResponse,
+    DeleteAgentResponse,
+    DeleteConversationResponse,
     GetEventResponse,
     ListAgentResponse,
     ListConversationResponse,
@@ -82,6 +84,12 @@ class ConversationServer:
             '/agent/register', self._register_agent, methods=['POST']
         )
         router.add_api_route('/agent/list', self._list_agents, methods=['POST'])
+        router.add_api_route(
+            '/agent/delete', self._delete_agent, methods=['POST']
+        )
+        router.add_api_route(
+            '/conversation/delete', self._delete_conversation, methods=['POST']
+        )
         router.add_api_route(
             '/message/file/{file_id}', self._files, methods=['GET']
         )
@@ -180,6 +188,20 @@ class ConversationServer:
 
     async def _list_agents(self):
         return ListAgentResponse(result=self.manager.agents)
+        
+    async def _delete_agent(self, request: Request):
+        """Delete an agent by URL."""
+        data = await request.json()
+        agent_url = data['params']
+        result = self.manager.delete_agent(agent_url)
+        return DeleteAgentResponse(result=result)
+        
+    async def _delete_conversation(self, request: Request):
+        """Delete a conversation by ID."""
+        data = await request.json()
+        conversation_id = data['params']
+        result = self.manager.delete_conversation(conversation_id)
+        return DeleteConversationResponse(result=result)
 
     def _files(self, file_id):
         if file_id not in self._file_cache:

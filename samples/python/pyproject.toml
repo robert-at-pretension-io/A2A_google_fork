@@ -31,7 +31,8 @@ members = [
     "agents/semantickernel",
     "agents/mindsdb",
     "agents/ag2",
-    "agents/elevenlabs_tts"
+    "agents/elevenlabs_tts",
+    "agents/vertex_image_gen"
 ]
 
 [build-system]

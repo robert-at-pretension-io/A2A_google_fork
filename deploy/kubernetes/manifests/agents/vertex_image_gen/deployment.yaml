@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-agent-vertex-image-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-agent-vertex-image-gen
+  template:
+    metadata:
+      labels:
+        app: a2a-agent-vertex-image-gen
+    spec:
+      containers:
+      - name: agent
+        image: a2a-agent:vertex_image_gen
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10006
+        envFrom:
+        - configMapRef:
+            name: a2a-config
+        - secretRef:
+            name: a2a-secrets
+        env:
+        - name: GOOGLE_GENAI_USE_VERTEXAI
+          value: "TRUE"
+        # These will come from the secret
+        # - name: GOOGLE_CLOUD_PROJECT
+        # - name: GOOGLE_CLOUD_LOCATION

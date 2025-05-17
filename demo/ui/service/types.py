@@ -98,6 +98,24 @@ class RegisterAgentRequest(JSONRPCRequest):
 
 class RegisterAgentResponse(JSONRPCResponse):
     result: str | None = None
+    
+    
+class DeleteConversationRequest(JSONRPCRequest):
+    method: Literal['conversation/delete'] = 'conversation/delete'
+    params: str  # Conversation ID
+    
+    
+class DeleteConversationResponse(JSONRPCResponse):
+    result: bool
+
+
+class DeleteAgentRequest(JSONRPCRequest):
+    method: Literal['agent/delete'] = 'agent/delete'
+    params: str  # Agent URL
+    
+    
+class DeleteAgentResponse(JSONRPCResponse):
+    result: bool
 
 
 class ListAgentRequest(JSONRPCRequest):

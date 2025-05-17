@@ -1,0 +1,2 @@
+# Minimal Tiltfile for A2A demo
+docker_compose('./deploy/local/docker-compose.yaml')

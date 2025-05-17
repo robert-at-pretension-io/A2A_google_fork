@@ -1,0 +1,73 @@
+services:
+  ui:
+    build:
+      context: ../..
+      dockerfile: deploy/kubernetes/docker/ui/Dockerfile
+    ports:
+      - "12001:12000"
+    volumes:
+      - ui-data:/app/ui/.a2a_storage
+    env_file:
+      - .env
+    networks:
+      - a2a-network
+    depends_on:
+      agent-google-adk:
+        condition: service_started
+      agent-elevenlabs-tts:
+        condition: service_started
+    restart: unless-stopped
+
+  agent-google-adk:
+    build:
+      context: ../..
+      dockerfile: deploy/kubernetes/docker/agent/Dockerfile
+      args:
+        AGENT_DIR: google_adk
+    ports:
+      - "10002:10002"
+    env_file:
+      - .env
+    networks:
+      - a2a-network
+    restart: unless-stopped
+
+  agent-elevenlabs-tts:
+    build:
+      context: ../..
+      dockerfile: deploy/kubernetes/docker/agent/Dockerfile
+      args:
+        AGENT_DIR: elevenlabs_tts
+    ports:
+      - "10005:10005"
+    env_file:
+      - .env
+    networks:
+      - a2a-network
+    restart: unless-stopped
+      
+  agent-vertex-image-gen:
+    build:
+      context: ../..
+      dockerfile: deploy/kubernetes/docker/agent/Dockerfile
+      args:
+        AGENT_DIR: vertex_image_gen
+    ports:
+      - "10006:10006"
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_GENAI_USE_VERTEXAI=TRUE
+    # Mount Google Cloud credentials if running locally
+    volumes:
+      - ${HOME}/.config/gcloud:/root/.config/gcloud
+    networks:
+      - a2a-network
+    restart: unless-stopped
+
+volumes:
+  ui-data:
+
+networks:
+  a2a-network:
+    driver: bridge

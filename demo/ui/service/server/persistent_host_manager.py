@@ -36,6 +36,8 @@ class PersistentADKHostManager(ADKHostManager):
         """Load conversations and agents from storage."""
         # Load agents
         agents_data = self._storage.load("agents")
+        agents_to_register = []
+        
         if agents_data and "agents" in agents_data:
             for agent_data in agents_data["agents"]:
                 # Create AgentCard from data
@@ -44,10 +46,16 @@ class PersistentADKHostManager(ADKHostManager):
                     # Add only if not already in list
                     if agent.url not in [a.url for a in self._agents]:
                         self._agents.append(agent)
-                        # Register with host agent
-                        self.host_agent.register_agent_card(agent)
+                        agents_to_register.append(agent)
                 except Exception as e:
                     print(f"Error loading agent: {e}")
+        
+        # Register agents with host after initialization is complete
+        for agent in agents_to_register:
+            try:
+                self._host_agent.register_agent_card(agent)
+            except Exception as e:
+                print(f"Error registering agent with host: {e}")
         
         # Load conversations
         convs_data = self._storage.load("conversations")
@@ -111,6 +119,28 @@ class PersistentADKHostManager(ADKHostManager):
         conversation = super().create_conversation()
         self._save_conversations()
         return conversation
+        
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation by ID and update storage."""
+        result = super().delete_conversation(conversation_id)
+        if result:
+            self._save_conversations()
+            # Also delete the conversation's messages file
+            try:
+                import os
+                message_file = self._storage.storage_dir / f"messages_{conversation_id}.json"
+                if os.path.exists(message_file):
+                    os.remove(message_file)
+            except Exception as e:
+                print(f"Error deleting conversation message file: {e}")
+        return result
+        
+    def delete_agent(self, agent_url: str) -> bool:
+        """Delete an agent by URL and update storage."""
+        result = super().delete_agent(agent_url)
+        if result:
+            self._save_agents()
+        return result
 
     async def process_message(self, message):
         """Process message and save updates to storage."""

@@ -8,6 +8,16 @@ class ApplicationManager(ABC):
     @abstractmethod
     def create_conversation(self) -> Conversation:
         pass
+        
+    @abstractmethod
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation by ID."""
+        pass
+        
+    @abstractmethod
+    def delete_agent(self, agent_url: str) -> bool:
+        """Delete an agent by URL."""
+        pass
 
     @abstractmethod
     def sanitize_message(self, message: Message) -> Message:
@@ -23,6 +33,11 @@ class ApplicationManager(ABC):
 
     @abstractmethod
     def get_pending_messages(self) -> list[str]:
+        pass
+        
+    @abstractmethod
+    def get_conversation(self, conversation_id: str) -> Conversation:
+        """Get a conversation by ID."""
         pass
 
     @property

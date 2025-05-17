@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-agent-elevenlabs-tts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-agent-elevenlabs-tts
+  template:
+    metadata:
+      labels:
+        app: a2a-agent-elevenlabs-tts
+    spec:
+      containers:
+      - name: agent
+        image: a2a-agent:elevenlabs_tts
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10005
+        envFrom:
+        - configMapRef:
+            name: a2a-config
+        - secretRef:
+            name: a2a-secrets
+        env:
+        - name: ELEVENLABS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: a2a-secrets
+              key: ELEVENLABS_API_KEY
+              optional: true

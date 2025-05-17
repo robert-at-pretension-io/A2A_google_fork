@@ -146,7 +146,7 @@ async def completeTask(
     payload = {
         'id': taskId,
         'sessionId': sessionId,
-        'acceptedOutputModes': ['text'],
+        'acceptedOutputModes': ['text', 'audio/mpeg', 'image/png'],
         'message': message,
     }
 

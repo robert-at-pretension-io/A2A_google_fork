@@ -1,0 +1,54 @@
+# -*- mode: Python -*-
+
+def dotenv(dotenvfile='.env'):
+    """
+    Load environment variables from the given .env file into the Tilt process.
+    This extension uses Docker Compose's parsing logic, so you should be able to parse any .env file that your Docker Compose setup supports.
+
+    Args:
+        dotenvfile: The .env file to load. By default, loads a file named ".env"
+
+    Example:
+        Load the default .env file:
+        ```
+        load('ext://dotenv', 'dotenv')
+        dotenv()
+        ```
+
+        Load a file named keys.env:
+        ```
+        load('ext://dotenv', 'dotenv')
+        dotenv('keys.env')
+        ```
+    """
+    dotenv_dir = os.getcwd()
+    dotenv_path = os.path.join(dotenv_dir, dotenvfile)
+    
+    if not os.path.isfile(dotenv_path):
+        print("NOTE: No .env file found at {}".format(dotenv_path))
+        return
+    
+    # Read the .env file
+    with open(dotenv_path, 'r') as f:
+        lines = f.readlines()
+    
+    # Process each line
+    for line in lines:
+        line = line.strip()
+        # Skip comments and empty lines
+        if not line or line.startswith('#'):
+            continue
+        
+        # Parse key=value
+        if '=' in line:
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            
+            # Remove quotes if present
+            if value and value[0] == value[-1] and value[0] in ('"', "'"):
+                value = value[1:-1]
+            
+            # Set environment variable
+            os.environ[key] = value
+            print("env: {}={}".format(key, value))

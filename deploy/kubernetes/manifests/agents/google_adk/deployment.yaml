@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-agent-google-adk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-agent-google-adk
+  template:
+    metadata:
+      labels:
+        app: a2a-agent-google-adk
+    spec:
+      containers:
+      - name: agent
+        image: a2a-agent:google_adk
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10002
+        envFrom:
+        - configMapRef:
+            name: a2a-config
+        - secretRef:
+            name: a2a-secrets

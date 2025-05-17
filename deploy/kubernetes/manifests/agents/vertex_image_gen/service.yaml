@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: a2a-agent-vertex-image-gen
+spec:
+  selector:
+    app: a2a-agent-vertex-image-gen
+  ports:
+  - port: 10006
+    targetPort: 10006
+  type: ClusterIP

@@ -9,6 +9,10 @@ from service.types import (
     AgentClientJSONError,
     CreateConversationRequest,
     CreateConversationResponse,
+    DeleteAgentRequest,
+    DeleteAgentResponse,
+    DeleteConversationRequest,
+    DeleteConversationResponse,
     GetEventRequest,
     GetEventResponse,
     JSONRPCRequest,
@@ -87,3 +91,9 @@ class ConversationClient:
 
     async def list_agents(self, payload: ListAgentRequest) -> ListAgentResponse:
         return ListAgentResponse(**await self._send_request(payload))
+        
+    async def delete_agent(self, payload: DeleteAgentRequest) -> DeleteAgentResponse:
+        return DeleteAgentResponse(**await self._send_request(payload))
+        
+    async def delete_conversation(self, payload: DeleteConversationRequest) -> DeleteConversationResponse:
+        return DeleteConversationResponse(**await self._send_request(payload))

@@ -148,6 +148,44 @@ class InMemoryFakeAgentManager(ApplicationManager):
             ),
             None,
         )
+        
+    def delete_conversation(self, conversation_id: str) -> bool:
+        """Delete a conversation by ID and all related messages and tasks."""
+        conversation = self.get_conversation(conversation_id)
+        if not conversation:
+            return False
+            
+        # Remove conversation
+        self._conversations = [c for c in self._conversations if c.conversation_id != conversation_id]
+        
+        # Remove related messages
+        self._messages = [
+            m for m in self._messages 
+            if not (m.metadata and m.metadata.get("conversation_id") == conversation_id)
+        ]
+        
+        # Remove related tasks
+        related_task_ids = []
+        for task in self._tasks:
+            if task.metadata and task.metadata.get("conversation_id") == conversation_id:
+                related_task_ids.append(task.id)
+                
+        self._tasks = [t for t in self._tasks if t.id not in related_task_ids]
+        
+        # Remove from task map
+        for message_id, task_id in list(self._task_map.items()):
+            if task_id in related_task_ids:
+                del self._task_map[message_id]
+                
+        return True
+        
+    def delete_agent(self, agent_url: str) -> bool:
+        """Delete an agent by URL."""
+        original_count = len(self._agents)
+        self._agents = [a for a in self._agents if a.url != agent_url]
+        
+        # Return True if an agent was actually removed
+        return len(self._agents) < original_count
 
     def get_pending_messages(self) -> list[tuple[str, str]]:
         rval = []

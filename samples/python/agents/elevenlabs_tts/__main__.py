@@ -23,7 +23,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @click.command()
-@click.option("--host", default="localhost", help="Host to run the server on")
+@click.option("--host", default="0.0.0.0", help="Host to run the server on (use 0.0.0.0 for Docker/Kubernetes)")
 @click.option("--port", default=10005, type=int, help="Port to run the server on")
 def main(host, port):
     """Run the ElevenLabs TTS A2A agent."""

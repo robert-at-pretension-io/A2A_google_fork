@@ -39,44 +39,84 @@ class RemoteAgentConnections:
     ) -> Task | None:
         if self.card.capabilities.streaming:
             task = None
+            # Create an initial task submission record
+            submission_task = Task(
+                id=request.id,
+                sessionId=request.sessionId,
+                status=TaskStatus(
+                    state=TaskState.SUBMITTED,
+                    message=request.message,
+                ),
+                history=[request.message],
+            )
+            
             if task_callback:
-                task_callback(
-                    Task(
-                        id=request.id,
-                        sessionId=request.sessionId,
-                        status=TaskStatus(
-                            state=TaskState.SUBMITTED,
-                            message=request.message,
-                        ),
-                        history=[request.message],
-                    ),
-                    self.card,
-                )
-            async for response in self.agent_client.send_task_streaming(
-                request.model_dump()
-            ):
-                merge_metadata(response.result, request)
-                # For task status updates, we need to propagate metadata and provide
-                # a unique message id.
-                if (
-                    hasattr(response.result, 'status')
-                    and hasattr(response.result.status, 'message')
-                    and response.result.status.message
+                task_callback(submission_task, self.card)
+                
+            try:
+                async for response in self.agent_client.send_task_streaming(
+                    request.model_dump()
                 ):
-                    merge_metadata(
-                        response.result.status.message, request.message
-                    )
-                    m = response.result.status.message
-                    if not m.metadata:
-                        m.metadata = {}
-                    if 'message_id' in m.metadata:
-                        m.metadata['last_message_id'] = m.metadata['message_id']
-                    m.metadata['message_id'] = str(uuid.uuid4())
+                    # Handle response if we got one from the agent
+                    if not hasattr(response, 'result'):
+                        continue
+                        
+                    merge_metadata(response.result, request)
+                    # For task status updates, we need to propagate metadata and provide
+                    # a unique message id.
+                    if (
+                        hasattr(response.result, 'status')
+                        and hasattr(response.result.status, 'message')
+                        and response.result.status.message
+                    ):
+                        merge_metadata(
+                            response.result.status.message, request.message
+                        )
+                        m = response.result.status.message
+                        if not m.metadata:
+                            m.metadata = {}
+                        if 'message_id' in m.metadata:
+                            m.metadata['last_message_id'] = m.metadata['message_id']
+                        m.metadata['message_id'] = str(uuid.uuid4())
+                    if task_callback:
+                        task = task_callback(response.result, self.card)
+                    if hasattr(response.result, 'final') and response.result.final:
+                        break
+                return task
+            except Exception as e:
+                error_msg = str(e)
+                print(f"Error communicating with agent {self.card.name}: {error_msg}")
+                
+                # Log detailed connection error information
+                import traceback
+                print("Detailed error traceback:")
+                traceback.print_exc()
+                
+                # Add specific logging for connection refused errors
+                if "Connection refused" in error_msg:
+                    print(f"DEBUG: Connection refused error detected for agent: {self.card.name}")
+                    print(f"Agent URL: {self.card.url}")
+                    print(f"This typically means the agent service is not running at {self.card.url}")
+                    print(f"Check if the ElevenLabs TTS agent is running and accessible at this URL")
+                    print(f"Agent capabilities: {self.card.capabilities}")
+                    print(f"Supported content types: {self.card.defaultOutputModes}")
+                
+                # Create a failed task for the callback
+                failed_task = Task(
+                    id=request.id,
+                    sessionId=request.sessionId,
+                    status=TaskStatus(
+                        state=TaskState.FAILED,
+                        message=request.message,
+                    ),
+                    history=[request.message],
+                )
+                
                 if task_callback:
-                    task = task_callback(response.result, self.card)
-                if hasattr(response.result, 'final') and response.result.final:
-                    break
-            return task
+                    print(f"Calling task_callback with failed task for agent: {self.card.name}")
+                    task_callback(failed_task, self.card)
+                    
+                return failed_task
         # Non-streaming
         response = await self.agent_client.send_task(request.model_dump())
         merge_metadata(response.result, request)

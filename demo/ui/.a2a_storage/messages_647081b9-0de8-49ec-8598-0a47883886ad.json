@@ -1,0 +1,67 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Hello",
+          "metadata": null
+        }
+      ],
+      "metadata": {
+        "conversation_id": "647081b9-0de8-49ec-8598-0a47883886ad",
+        "conversation_name": "",
+        "message_id": "9efa216f-5fae-4108-a65d-62f011e2086f"
+      }
+    },
+    {
+      "role": "agent",
+      "parts": [
+        {
+          "type": "text",
+          "text": "I am here to help. What can I do for you?\n",
+          "metadata": null
+        }
+      ],
+      "metadata": {
+        "conversation_id": "647081b9-0de8-49ec-8598-0a47883886ad",
+        "conversation_name": "",
+        "message_id": "81b4453f-5780-458b-9900-3553325b0a84",
+        "last_message_id": null
+      }
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Please generate an audio message saying \"I love you\"",
+          "metadata": null
+        }
+      ],
+      "metadata": {
+        "conversation_id": "647081b9-0de8-49ec-8598-0a47883886ad",
+        "conversation_name": "",
+        "message_id": "2c5dae2b-04d5-4a36-ba29-887c65df251c",
+        "last_message_id": "81b4453f-5780-458b-9900-3553325b0a84"
+      }
+    },
+    {
+      "role": "agent",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Sorry, I can't directly generate an audio message. I do not have the capability to create audio files.\n",
+          "metadata": null
+        }
+      ],
+      "metadata": {
+        "conversation_id": "647081b9-0de8-49ec-8598-0a47883886ad",
+        "conversation_name": "",
+        "message_id": "30872b67-710d-4f1f-b298-14b8fa30d516",
+        "last_message_id": null
+      }
+    }
+  ]
+}

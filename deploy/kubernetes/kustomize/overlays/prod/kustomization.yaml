@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: a2a-prod
+
+resources:
+  - ../../base
+  - namespace.yaml
+  - ingress.yaml
+
+patchesStrategicMerge:
+  - configmap-patch.yaml
+  - ui-deployment-patch.yaml

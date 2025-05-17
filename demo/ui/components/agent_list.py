@@ -3,6 +3,7 @@ import pandas as pd
 
 from common.types import AgentCard
 from state.agent_state import AgentState
+from state.host_agent_service import DeleteRemoteAgent
 
 
 @me.component
@@ -18,6 +19,7 @@ def agents_list(
         'Input Modes': [],
         'Output Modes': [],
         'Streaming': [],
+        'Actions': [],
     }
     for agent_info in agents:
         df_data['Address'].append(agent_info.url)
@@ -29,6 +31,7 @@ def agents_list(
         df_data['Input Modes'].append(', '.join(agent_info.defaultInputModes))
         df_data['Output Modes'].append(', '.join(agent_info.defaultOutputModes))
         df_data['Streaming'].append(agent_info.capabilities.streaming)
+        df_data['Actions'].append("Delete")
     df = pd.DataFrame(
         pd.DataFrame(df_data),
         columns=[
@@ -39,6 +42,7 @@ def agents_list(
             'Input Modes',
             'Output Modes',
             'Streaming',
+            'Actions',
         ],
     )
     with me.box(
@@ -55,7 +59,9 @@ def agents_list(
                 'Address': me.TableColumn(sticky=True),
                 'Name': me.TableColumn(sticky=True),
                 'Description': me.TableColumn(sticky=True),
+                'Actions': me.TableColumn(sticky=True),
             },
+            on_click=on_table_click,
         )
         with me.content_button(
             type='raised',
@@ -76,3 +82,52 @@ def add_agent(e: me.ClickEvent):  # pylint: disable=unused-argument
     """Import agent button handler."""
     state = me.state(AgentState)
     state.agent_dialog_open = True
+    
+    
+async def on_table_click(e: me.TableClickEvent):
+    """Handle table clicks including delete action."""
+    # Get the current agents from the ListRemoteAgents function
+    agents = await ListRemoteAgents()
+    
+    # Build data from current agents
+    df_data = {
+        'Address': [],
+        'Name': [],
+        'Description': [],
+        'Organization': [],
+        'Input Modes': [],
+        'Output Modes': [],
+        'Streaming': [],
+        'Actions': [],
+    }
+    
+    for agent_info in agents:
+        df_data['Address'].append(agent_info.url)
+        df_data['Name'].append(agent_info.name)
+        df_data['Description'].append(agent_info.description)
+        df_data['Organization'].append(
+            agent_info.provider.organization if agent_info.provider else ''
+        )
+        df_data['Input Modes'].append(', '.join(agent_info.defaultInputModes))
+        df_data['Output Modes'].append(', '.join(agent_info.defaultOutputModes))
+        df_data['Streaming'].append(agent_info.capabilities.streaming)
+        df_data['Actions'].append("Delete")
+    
+    # Get column name from index
+    column_names = list(df_data.keys())
+    if e.col_index < len(column_names):
+        column_name = column_names[e.col_index]
+    else:
+        column_name = ""
+    
+    # Get row data based on index
+    row_index = e.row_index
+    
+    # Only handle clicks on the Actions column (for delete)
+    if column_name == 'Actions' and row_index < len(df_data['Address']):
+        agent_url = df_data['Address'][row_index]
+        # Delete the agent
+        await DeleteRemoteAgent(agent_url)
+        # Yield to trigger UI update
+        yield
+    yield

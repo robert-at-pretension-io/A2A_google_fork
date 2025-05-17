@@ -65,13 +65,35 @@ class AgentTaskManager(InMemoryTaskManager):
             # Send artifact update
             if artifacts:
                 for artifact in artifacts:
-                    yield SendTaskStreamingResponse(
-                        id=request.id,
-                        result=TaskArtifactUpdateEvent(
+                    try:
+                        # Ensuring that artifact is properly formed before creating TaskArtifactUpdateEvent
+                        # Creating a proper TaskArtifactUpdateEvent with validated artifact
+                        artifact_update = TaskArtifactUpdateEvent(
                             id=task_send_params.id,
                             artifact=artifact,
-                        ),
-                    )
+                        )
+                        yield SendTaskStreamingResponse(
+                            id=request.id,
+                            result=artifact_update,
+                        )
+                    except Exception as e:
+                        logger.error(f"Error creating artifact update: {e}")
+                        # Instead of failing, send an error message as a status update
+                        error_status = TaskStatus(
+                            state=TaskState.WORKING,
+                            message=Message(
+                                role="agent",
+                                parts=[TextPart(text=f"Error creating artifact: {str(e)}")]
+                            )
+                        )
+                        yield SendTaskStreamingResponse(
+                            id=request.id,
+                            result=TaskStatusUpdateEvent(
+                                id=task_send_params.id,
+                                status=error_status,
+                                final=False,
+                            )
+                        )
             
             # Send final status update
             yield SendTaskStreamingResponse(
@@ -94,12 +116,32 @@ class AgentTaskManager(InMemoryTaskManager):
             
         except Exception as e:
             logger.error(f'An error occurred while streaming the response: {e}')
-            yield JSONRPCResponse(
-                id=request.id,
-                error=InternalError(
-                    message=f'An error occurred while streaming the response: {e}'
-                ),
-            )
+            # Send a final status update with the failure state
+            try:
+                error_status = TaskStatus(
+                    state=TaskState.FAILED,  # Using the correct TaskState enum value
+                    message=Message(
+                        role="agent",
+                        parts=[TextPart(text=f"Error processing request: {str(e)}")]
+                    )
+                )
+                yield SendTaskStreamingResponse(
+                    id=request.id,
+                    result=TaskStatusUpdateEvent(
+                        id=task_send_params.id,
+                        status=error_status,
+                        final=True
+                    )
+                )
+            except Exception as e2:
+                # If even the error status fails, fall back to a basic JSONRPC error
+                logger.error(f'Failed to create error status: {e2}')
+                yield JSONRPCResponse(
+                    id=request.id,
+                    error=InternalError(
+                        message=f'An error occurred while streaming the response: {e}'
+                    ),
+                )
 
     def _validate_request(
         self, request: SendTaskRequest | SendTaskStreamingRequest
@@ -176,7 +218,7 @@ class AgentTaskManager(InMemoryTaskManager):
         if "error" in result:
             # Return error message as text
             parts = [TextPart(text=f"Error: {result['error']}")]
-            return [Artifact(parts=parts, index=0, append=False)]
+            return [Artifact(name="Error Message", parts=parts, index=0, append=False)]
             
         # Create parts for the artifact
         parts = []
@@ -189,15 +231,26 @@ class AgentTaskManager(InMemoryTaskManager):
         if "audio_file" in result:
             audio_file = result["audio_file"]
             
-            # Make sure we're sending a proper structure
-            parts.append(
-                FilePart(
+            try:
+                # Make sure we're sending a proper structure
+                file_part = FilePart(
                     file={
                         "name": audio_file["filename"],
                         "mimeType": audio_file["mime_type"],
                         "bytes": audio_file["content"]
                     }
                 )
-            )
+                parts.append(file_part)
+            except Exception as e:
+                logger.error(f"Error creating file part: {e}")
+                # Add error as text part instead
+                parts.append(TextPart(text=f"Error creating audio file part: {str(e)}"))
+        
+        # Ensure we have a proper artifact name
+        artifact_name = "Text to Speech Result"
+        
+        if not parts:
+            # If we don't have any parts, add a placeholder text part
+            parts = [TextPart(text="No content was generated.")]
             
-        return [Artifact(parts=parts, index=0, append=False)]
+        return [Artifact(name=artifact_name, parts=parts, index=0, append=False)]

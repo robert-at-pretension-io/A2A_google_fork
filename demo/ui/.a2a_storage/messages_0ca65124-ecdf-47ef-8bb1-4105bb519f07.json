@@ -40,6 +40,22 @@
         "message_id": "5b899912-05d8-4a2e-9ed6-26cd993b743e",
         "last_message_id": "0121e6e7-68fc-41f0-ba1f-6965042ef368"
       }
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Please generate an audio message saying you lov eme",
+          "metadata": null
+        }
+      ],
+      "metadata": {
+        "conversation_id": "0ca65124-ecdf-47ef-8bb1-4105bb519f07",
+        "conversation_name": "",
+        "message_id": "2ce3d08c-3f87-4373-af15-0a044efb2a63",
+        "last_message_id": "5b899912-05d8-4a2e-9ed6-26cd993b743e"
+      }
     }
   ]
 }

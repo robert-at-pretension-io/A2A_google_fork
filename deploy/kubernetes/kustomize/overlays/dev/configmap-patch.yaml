@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: a2a-config
+data:
+  A2A_PERSISTENCE: "TRUE"
+  GOOGLE_GENAI_USE_VERTEXAI: "FALSE"
+  # Development-specific settings
+  DEBUG: "TRUE"

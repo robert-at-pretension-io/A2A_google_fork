@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-ui
+  template:
+    metadata:
+      labels:
+        app: a2a-ui
+    spec:
+      containers:
+      - name: ui
+        image: a2a-ui:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 12000
+        volumeMounts:
+        - name: storage
+          mountPath: /app/ui/.a2a_storage
+        envFrom:
+        - configMapRef:
+            name: a2a-config
+        - secretRef:
+            name: a2a-secrets
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: a2a-ui-storage
