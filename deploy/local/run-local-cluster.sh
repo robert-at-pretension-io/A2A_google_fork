@@ -3,6 +3,8 @@
 # Quick script to run the A2A local cluster with Docker Compose
 # Created by Claude
 
+cd "$(dirname "$0")"
+
 echo "Starting A2A local cluster..."
 
 # Check if .env exists
