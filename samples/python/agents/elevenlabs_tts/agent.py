@@ -143,9 +143,11 @@ class ElevenLabsTTSAgent:
             f.write(audio_data)
         
         print(f"Saved audio file to: {file_path}")
+        print(f"Audio base64 length: {len(audio_b64)}, first 50 chars: {audio_b64[:50]}...")
         
         # Create response with both text and audio file
-        return {
+        # Make sure we're including the base64 encoded audio data
+        response = {
             "text": text,
             "audio_file": {
                 "filename": filename,
@@ -154,3 +156,6 @@ class ElevenLabsTTSAgent:
                 "local_path": file_path  # Added for reference
             }
         }
+        
+        print(f"Response audio_file content type: {type(response['audio_file']['content'])}")
+        return response

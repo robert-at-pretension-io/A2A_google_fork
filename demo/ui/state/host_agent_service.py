@@ -260,8 +260,14 @@ def extract_content(
             parts.append((p.text, 'text/plain'))
         elif p.type == 'file':
             if p.file.bytes:
+                # Make sure we're passing the actual bytes field
+                # Add a debug print to see what kind of data we have
+                print(f"Processing file part with mimeType: {p.file.mimeType}, bytes: {type(p.file.bytes)} length: {len(p.file.bytes) if p.file.bytes else 0}")
+                
+                # Ensure we're using the base64-encoded bytes directly
                 parts.append((p.file.bytes, p.file.mimeType))
             else:
+                print(f"Processing file part with URI: {p.file.uri}")
                 parts.append((p.file.uri, p.file.mimeType))
         elif p.type == 'data':
             try:
@@ -273,6 +279,9 @@ def extract_content(
             except Exception as e:
                 print('Failed to dump data', e)
                 parts.append(('<data>', 'text/plain'))
+    
+    # Debug print the content we extracted
+    print(f"Extracted {len(parts)} parts: {[(type(p[0]), p[1]) for p in parts]}")
     return parts
 
 

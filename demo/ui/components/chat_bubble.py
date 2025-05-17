@@ -57,9 +57,14 @@ def chat_box(
                     ),
                 )
             elif media_type == 'audio/mpeg':
+                # Log the content format before processing
+                print(f"Processing audio content: {'Data URI' if content.startswith('data:') else 'Base64' if '/message/file' not in content else 'File URL'}")
+                
                 # Ensure proper data URI format
                 if '/message/file' not in content and not content.startswith('data:'):
+                    # This is a base64 string that needs a data URI prefix
                     content = 'data:audio/mpeg;base64,' + content
+                    print(f"Converted to data URI, starts with: {content[:50]}...")
                 
                 # Create an HTML5 audio player element with sandboxed mode to avoid warnings
                 me.html(

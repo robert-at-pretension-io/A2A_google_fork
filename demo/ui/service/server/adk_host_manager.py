@@ -560,61 +560,61 @@ class ADKHostManager(ApplicationManager):
     ) -> Message:
         parts: list[Part] = []
         
-        # Log the content type to help trace warning origin
-        print(f"Converting ADK content with {len(content.parts)} parts to message, role: {content.role}")
-        print(f"Conversation ID: {conversation_id}")
+        # # Log the content type to help trace warning origin
+        # print(f"Converting ADK content with {len(content.parts)} parts to message, role: {content.role}")
+        # print(f"Conversation ID: {conversation_id}")
         
-        # Check for non-text parts in the response
-        non_text_parts = []
-        for i, part in enumerate(content.parts):
-            # Log every part's type information
-            print(f"Part {i} details:")
-            print(f"  - Has text attribute: {hasattr(part, 'text')}")
-            if hasattr(part, 'text'):
-                print(f"  - Text content (truncated): {str(part.text)[:50]}...")
+        # # Check for non-text parts in the response
+        # non_text_parts = []
+        # for i, part in enumerate(content.parts):
+        #     # Log every part's type information
+        #     print(f"Part {i} details:")
+        #     print(f"  - Has text attribute: {hasattr(part, 'text')}")
+        #     if hasattr(part, 'text'):
+        #         print(f"  - Text content (truncated): {str(part.text)[:50]}...")
             
-            # Log all available attributes on the part
-            part_attrs = {}
-            for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
-                has_attr = hasattr(part, attr)
-                part_attrs[attr] = has_attr
-                if has_attr:
-                    attr_value = getattr(part, attr)
-                    print(f"  - Has {attr}: {bool(attr_value)}")
-                    if attr_value:
-                        try:
-                            if hasattr(attr_value, 'model_dump'):
-                                attr_info = attr_value.model_dump()
-                                print(f"  - {attr} details: {json.dumps(attr_info, indent=2)[:200]}...")
-                            elif isinstance(attr_value, dict):
-                                print(f"  - {attr} keys: {list(attr_value.keys())}")
-                            else:
-                                print(f"  - {attr} type: {type(attr_value).__name__}")
-                        except Exception as e:
-                            print(f"  - Error inspecting {attr}: {str(e)}")
+        #     # Log all available attributes on the part
+        #     part_attrs = {}
+        #     for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
+        #         has_attr = hasattr(part, attr)
+        #         part_attrs[attr] = has_attr
+        #         if has_attr:
+        #             attr_value = getattr(part, attr)
+        #             print(f"  - Has {attr}: {bool(attr_value)}")
+        #             if attr_value:
+        #                 try:
+        #                     if hasattr(attr_value, 'model_dump'):
+        #                         attr_info = attr_value.model_dump()
+        #                         print(f"  - {attr} details: {json.dumps(attr_info, indent=2)[:200]}...")
+        #                     elif isinstance(attr_value, dict):
+        #                         print(f"  - {attr} keys: {list(attr_value.keys())}")
+        #                     else:
+        #                         print(f"  - {attr} type: {type(attr_value).__name__}")
+        #                 except Exception as e:
+        #                     print(f"  - Error inspecting {attr}: {str(e)}")
             
-            # Track non-text parts
-            if not hasattr(part, 'text') or not part.text:
-                part_type = 'unknown'
-                for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
-                    if hasattr(part, attr) and getattr(part, attr):
-                        part_type = attr
-                        break
-                non_text_parts.append(part_type)
-                print(f"  - Identified as non-text part: {part_type}")
+        #     # Track non-text parts
+        #     if not hasattr(part, 'text') or not part.text:
+        #         part_type = 'unknown'
+        #         for attr in ['function_call', 'function_response', 'inline_data', 'file_data', 'video_metadata', 'thought', 'executable_code']:
+        #             if hasattr(part, attr) and getattr(part, attr):
+        #                 part_type = attr
+        #                 break
+        #         non_text_parts.append(part_type)
+        #         print(f"  - Identified as non-text part: {part_type}")
         
-        if non_text_parts:
-            print(f"Warning: there are non-text parts in the response: {non_text_parts}")
-            print("Returning concatenated text result from text parts")
-            print("Check out the non text parts for full response from model")
-            print(f"Agent error debug information - Non-text parts found: {len(non_text_parts)}")
+        # if non_text_parts:
+        #     print(f"Warning: there are non-text parts in the response: {non_text_parts}")
+        #     print("Returning concatenated text result from text parts")
+        #     print("Check out the non text parts for full response from model")
+        #     print(f"Agent error debug information - Non-text parts found: {len(non_text_parts)}")
             
-            # Log additional debugging info about the connection refused error
-            if "function_call" in non_text_parts:
-                print("DEBUG: function_call found in response parts, which may be related to the warning")
-                print("This typically happens when a function is called but there's an issue with the agent connection")
-                print("Check if ElevenLabs TTS agent is running at the expected URL (http://localhost:10005/)")
-                print("Connection refused errors often indicate the service is not running or not accessible")
+        #     # Log additional debugging info about the connection refused error
+        #     if "function_call" in non_text_parts:
+        #         print("DEBUG: function_call found in response parts, which may be related to the warning")
+        #         print("This typically happens when a function is called but there's an issue with the agent connection")
+        #         print("Check if ElevenLabs TTS agent is running at the expected URL (http://localhost:10005/)")
+        #         print("Connection refused errors often indicate the service is not running or not accessible")
             
         if not content.parts:
             return Message(

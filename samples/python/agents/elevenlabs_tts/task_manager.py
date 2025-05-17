@@ -23,6 +23,7 @@ from common.types import (
     TaskStatusUpdateEvent,
     TextPart,
     FilePart,
+    FileContent,
     Part,
 )
 
@@ -232,17 +233,25 @@ class AgentTaskManager(InMemoryTaskManager):
             audio_file = result["audio_file"]
             
             try:
-                # Make sure we're sending a proper structure
-                file_part = FilePart(
-                    file={
-                        "name": audio_file["filename"],
-                        "mimeType": audio_file["mime_type"],
-                        "bytes": audio_file["content"]
-                    }
+                # Make sure we're sending a proper structure with properly-formed FilePart
+                # Note: we instantiate FilePart correctly using the FileContent model
+                file_content = FileContent(
+                    name=audio_file["filename"],
+                    mimeType=audio_file["mime_type"],
+                    bytes=audio_file["content"]  # This is already base64-encoded from agent.py
                 )
+                file_part = FilePart(file=file_content)
+                
+                # Add debugging log to inspect the file part
+                logger.info(f"Creating file part with name: {file_content.name}, type: {file_content.mimeType}, bytes length: {len(file_content.bytes) if file_content.bytes else 0}")
+                
                 parts.append(file_part)
+                
+                # Add a debug text part to confirm audio was included
+                parts.append(TextPart(text=f"[Audio file generated successfully. Type: {audio_file['mime_type']}]"))
             except Exception as e:
                 logger.error(f"Error creating file part: {e}")
+                logger.exception("Full exception details:")
                 # Add error as text part instead
                 parts.append(TextPart(text=f"Error creating audio file part: {str(e)}"))
         
@@ -252,5 +261,8 @@ class AgentTaskManager(InMemoryTaskManager):
         if not parts:
             # If we don't have any parts, add a placeholder text part
             parts = [TextPart(text="No content was generated.")]
+            
+        # Debug log for the final artifact
+        logger.info(f"Created artifact with {len(parts)} parts: {[p.type for p in parts]}")
             
         return [Artifact(name=artifact_name, parts=parts, index=0, append=False)]

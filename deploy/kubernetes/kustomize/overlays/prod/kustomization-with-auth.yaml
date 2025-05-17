@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: a2a-prod
+
+resources:
+- ../../base
+- namespace.yaml
+- ../../../manifests/common/oauth2-proxy.yaml
+
+patchesStrategicMerge:
+- configmap-patch.yaml
+- ui-deployment-patch.yaml
+
+replacements:
+- source:
+    kind: Ingress
+    name: a2a-ui-ingress
+    path: ingress-with-auth.yaml
+  targets:
+  - select:
+      kind: Ingress
+      name: a2a-ui-ingress
+    reject:
+    - ingress-with-auth.yaml
+    options:
+      create: true
