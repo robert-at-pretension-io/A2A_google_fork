@@ -56,6 +56,20 @@ def chat_box(
                         object_fit='contain',
                     ),
                 )
+            elif media_type == 'audio/mpeg':
+                # Ensure proper data URI format
+                if '/message/file' not in content and not content.startswith('data:'):
+                    content = 'data:audio/mpeg;base64,' + content
+                
+                # Create an HTML5 audio player element with sandboxed mode to avoid warnings
+                me.html(
+                    f'<audio controls src="{content}" style="max-width: 300px;"></audio>',
+                    style=me.Style(
+                        margin=me.Margin(top=5, left=0, right=0, bottom=5),
+                        padding=me.Padding(top=1, left=15, right=15, bottom=1),
+                    ),
+                    mode='sandboxed',
+                )
             else:
                 me.markdown(
                     content,

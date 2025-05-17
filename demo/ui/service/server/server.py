@@ -40,11 +40,22 @@ class ConversationServer:
         uses_vertex_ai = (
             os.environ.get('GOOGLE_GENAI_USE_VERTEXAI', '').upper() == 'TRUE'
         )
-
+        
+        # Use persistent storage if enabled (default to enabled)
+        use_persistence = os.environ.get('A2A_PERSISTENCE', 'TRUE').upper() == 'TRUE'
+        
         if agent_manager.upper() == 'ADK':
-            self.manager = ADKHostManager(
-                api_key=api_key, uses_vertex_ai=uses_vertex_ai
-            )
+            if use_persistence:
+                # Import here to avoid circular imports
+                from service.server.persistent_host_manager import PersistentADKHostManager
+                print("Using persistent storage for conversations and agents")
+                self.manager = PersistentADKHostManager(
+                    api_key=api_key, uses_vertex_ai=uses_vertex_ai
+                )
+            else:
+                self.manager = ADKHostManager(
+                    api_key=api_key, uses_vertex_ai=uses_vertex_ai
+                )
         else:
             self.manager = InMemoryFakeAgentManager()
         self._file_cache = {}  # dict[str, FilePart] maps file id to message data
@@ -174,11 +185,16 @@ class ConversationServer:
         if file_id not in self._file_cache:
             raise Exception('file not found')
         part = self._file_cache[file_id]
-        if 'image' in part.file.mimeType:
-            return Response(
-                content=base64.b64decode(part.file.bytes),
-                media_type=part.file.mimeType,
-            )
+        # Handle both image and audio files by decoding base64 content
+        if 'image' in part.file.mimeType or 'audio' in part.file.mimeType:
+            try:
+                return Response(
+                    content=base64.b64decode(part.file.bytes),
+                    media_type=part.file.mimeType,
+                )
+            except Exception as e:
+                # Fall back to directly returning the content
+                return Response(content=part.file.bytes, media_type=part.file.mimeType)
         return Response(content=part.file.bytes, media_type=part.file.mimeType)
 
     async def _update_api_key(self, request: Request):

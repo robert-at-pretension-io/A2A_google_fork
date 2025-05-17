@@ -1,0 +1,22 @@
+[project]
+name = "a2a-sample-agent-elevenlabs"
+version = "0.1.0"
+description = "ElevenLabs TTS Agent with A2A Protocol integration"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "a2a-samples",
+    "click>=8.1.8",
+    "requests>=2.30.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.uv.sources]
+a2a-samples = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

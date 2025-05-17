@@ -1,0 +1,46 @@
+{
+  "agents": [
+    {
+      "name": "ElevenLabs TTS Agent",
+      "description": "Converts text to speech using ElevenLabs API",
+      "url": "http://localhost:10005/",
+      "provider": null,
+      "version": "1.0.0",
+      "documentationUrl": null,
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": false,
+        "stateTransitionHistory": false
+      },
+      "authentication": null,
+      "defaultInputModes": [
+        "text",
+        "text/plain"
+      ],
+      "defaultOutputModes": [
+        "text",
+        "text/plain",
+        "audio/mpeg"
+      ],
+      "skills": [
+        {
+          "id": "text-to-speech",
+          "name": "Text to Speech",
+          "description": "Converts text to speech using ElevenLabs API",
+          "tags": [
+            "tts",
+            "audio",
+            "speech"
+          ],
+          "examples": [
+            "Convert this text to speech",
+            "Generate audio for this message",
+            "Read this text aloud"
+          ],
+          "inputModes": null,
+          "outputModes": null
+        }
+      ]
+    }
+  ]
+}
