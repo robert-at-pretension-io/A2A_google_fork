@@ -3,7 +3,7 @@ import asyncio
 import mesop as me
 import pandas as pd
 
-from state.host_agent_service import GetEvents, convert_event_to_state
+from state.host_agent_service import ListEvents, convert_event_to_state
 
 
 def flatten_content(content: list[tuple[str, str]]) -> str:
@@ -27,7 +27,7 @@ def event_list():
         'Id': [],
         'Content': [],
     }
-    events = asyncio.run(GetEvents())
+    events = asyncio.run(ListEvents())
     for e in events:
         event = convert_event_to_state(e)
         df_data['Conversation ID'].append(event.conversation_id)
