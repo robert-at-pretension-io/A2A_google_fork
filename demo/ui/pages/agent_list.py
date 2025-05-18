@@ -7,7 +7,7 @@ from components.dialog import dialog, dialog_actions
 from components.header import header
 from components.page_scaffold import page_frame, page_scaffold
 from state.agent_state import AgentState
-from state.host_agent_service import AddRemoteAgent, ListRemoteAgents
+from state.host_agent_service import RegisterAgent, ListAgents
 from state.state import AppState
 from utils.agent_card import get_agent_card
 
@@ -19,7 +19,7 @@ def agent_list_page(app_state: AppState):
         with page_frame():
             with header('Remote Agents', 'smart_toy'):
                 pass
-            agents = asyncio.run(ListRemoteAgents())
+            agents = asyncio.run(ListAgents())
             agents_list(agents)
             with dialog(state.agent_dialog_open):
                 with me.box(
@@ -101,7 +101,7 @@ def cancel_agent_dialog(e: me.ClickEvent):
 
 async def save_agent(e: me.ClickEvent):
     state = me.state(AgentState)
-    await AddRemoteAgent(state.agent_address)
+    await RegisterAgent(state.agent_address)
     state.agent_address = ''
     state.agent_name = ''
     state.agent_description = ''
