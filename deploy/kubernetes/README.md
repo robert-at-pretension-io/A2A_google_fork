@@ -6,6 +6,7 @@ This directory contains the Kubernetes manifests and scripts for deploying the A
 > - [Main A2A Protocol Documentation](https://google.github.io/A2A/)
 > - [Main Project README](/README.md)
 > - [Local Docker Deployment](/deploy/local/README.md)
+> - [Online Kubernetes Deployment](/deploy/kubernetes/README-ONLINE.md)
 > - [Sample Agents Documentation](/samples/python/agents/README.md)
 
 ## Overview

@@ -222,7 +222,7 @@ class CloneRepoTool(BaseTool):
 # --------------------------------------------------------------------------- #
 repo_cloner_agent = Agent(
     name="git_repo_cloner",
-    model="gemini-1.5-flash-latest",
+    model="gemini-2.0-flash-001",
     instruction=(
         "You are a coding assistant who can clone public or private Git repositories. "
         "When the user asks to clone, prepare a `clone_repo` tool call with `repo_url`, "

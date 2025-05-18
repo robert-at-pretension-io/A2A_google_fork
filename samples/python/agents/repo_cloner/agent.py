@@ -231,7 +231,11 @@ class RepoCloneAgent(AgentWithTaskManager):
         Returns:
             Dict with response data
         """
-        from google.adk.types import Content, Part
+        try:
+            from google.adk.types import Content, Part
+        except ImportError:
+            # Fallback for ADK versions that have different import structure
+            from google.adk.typed_model import Content, Part
         
         session = self._runner.session_service.get_session(
             app_name=self._agent.name,
