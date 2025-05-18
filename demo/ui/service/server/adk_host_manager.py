@@ -3,6 +3,21 @@ import datetime
 import json
 import os
 import uuid
+from typing import Any
+
+
+def safe_serialize(obj: Any) -> str:
+    """Safely convert an object to a string representation.
+    Handles objects that aren't JSON serializable by converting them to strings."""
+    try:
+        if hasattr(obj, '__dict__'):
+            # For custom objects, return a dict-like representation
+            return str({key: safe_serialize(value) for key, value in obj.__dict__.items()})
+        else:
+            # Try to JSON serialize, fall back to string representation
+            return json.dumps(obj)
+    except (TypeError, ValueError, OverflowError):
+        return str(obj)
 
 from common.types import (
     AgentCard,
@@ -732,9 +747,13 @@ class ADKHostManager(ApplicationManager):
                         )
                     else:
                         parts.append(DataPart(data=p.data))
+                elif isinstance(p, FilePart):
+                    print(f"Item {i} is FilePart, adding directly")
+                    parts.append(p)
                 else:
-                    print(f"Item {i} is unknown type: {type(p)}, converting to JSON string")
-                    parts.append(TextPart(text=json.dumps(p)))
+                    print(f"Item {i} is unknown type: {type(p)}, converting to string representation")
+                    # Use safe serialization to avoid JSON serialization issues
+                    parts.append(TextPart(text=safe_serialize(p)))
             
             print(f"Function response produced {len(parts)} parts")
             for i, part in enumerate(parts):
@@ -744,8 +763,14 @@ class ADKHostManager(ApplicationManager):
             print(f"Couldn't convert function response to messages: {e}")
             import traceback
             traceback.print_exc()
-            print(f"Original function response: {json.dumps(part.function_response.model_dump(), indent=2)}")
-            parts.append(DataPart(data=part.function_response.model_dump()))
+            try:
+                response_dump = part.function_response.model_dump()
+                print(f"Original function response: {json.dumps(response_dump, indent=2)}")
+                parts.append(DataPart(data=response_dump))
+            except Exception as dump_error:
+                print(f"Error dumping function response: {dump_error}")
+                # Fallback to simple text error message
+                parts.append(TextPart(text=f"Error processing response: {str(e)}"))
         return parts
 
 

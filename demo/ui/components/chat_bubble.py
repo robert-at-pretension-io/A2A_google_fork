@@ -129,6 +129,8 @@ def chat_box(
                 if isinstance(content, dict):
                     # Attempt to find and render audio if present in a generic dict structure
                     audio_data_extracted = None
+                    
+                    # Pattern 1: Nested audio in response.result array
                     if 'response' in content and isinstance(content['response'], dict):
                         response_data = content['response']
                         if 'result' in response_data and isinstance(response_data['result'], list):
@@ -140,8 +142,63 @@ def chat_box(
                                        isinstance(file_obj.get('mimeType'), str) and \
                                        file_obj['mimeType'].startswith('audio/'):
                                         audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
-                                        print(f"Extracted audio from generic dict: {file_obj['mimeType']}")
-                                        break 
+                                        print(f"Extracted audio from nested response.result list: {file_obj['mimeType']}")
+                                        break
+                    
+                    # Pattern 2: Direct audio file in result array
+                    if not audio_data_extracted and 'result' in content and isinstance(content['result'], list):
+                        for item in content['result']:
+                            if isinstance(item, dict) and item.get('type') == 'file':
+                                file_obj = item.get('file')
+                                if isinstance(file_obj, dict) and \
+                                   file_obj.get('bytes') and \
+                                   isinstance(file_obj.get('mimeType'), str) and \
+                                   file_obj['mimeType'].startswith('audio/'):
+                                    audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
+                                    print(f"Extracted audio from direct result list: {file_obj['mimeType']}")
+                                    break
+                                    
+                    # Pattern 3: ElevenLabs TTS agent send_task response format
+                    # Handles: {"id": "adk-...", "name": "send_task", "response": {"result": ["text", {"type": "file", ...}, "[Audio file...]"]}}
+                    if not audio_data_extracted and 'id' in content and 'name' in content and content.get('name') == 'send_task':
+                        if 'response' in content and isinstance(content['response'], dict):
+                            response_data = content['response']
+                            if 'result' in response_data and isinstance(response_data['result'], list):
+                                # First, check each item directly
+                                for item in response_data['result']:
+                                    if isinstance(item, dict) and item.get('type') == 'file' and 'file' in item:
+                                        file_obj = item['file']
+                                        if isinstance(file_obj, dict) and \
+                                           file_obj.get('bytes') and \
+                                           isinstance(file_obj.get('mimeType'), str) and \
+                                           file_obj['mimeType'].startswith('audio/'):
+                                            audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
+                                            print(f"Extracted audio from ElevenLabs TTS response: {file_obj['mimeType']}")
+                                            break
+                                            
+                    # Pattern 4: Direct send_task response with complete serialized JSON
+                    # Handles the exact format shown in the example
+                    if not audio_data_extracted and isinstance(content, str):
+                        try:
+                            import json
+                            json_content = json.loads(content)
+                            if 'id' in json_content and 'name' in json_content and json_content.get('name') == 'send_task':
+                                if 'response' in json_content and isinstance(json_content['response'], dict):
+                                    response_data = json_content['response']
+                                    if 'result' in response_data and isinstance(response_data['result'], list):
+                                        for item in response_data['result']:
+                                            if isinstance(item, dict) and item.get('type') == 'file' and 'file' in item:
+                                                file_obj = item['file']
+                                                if isinstance(file_obj, dict) and \
+                                                   file_obj.get('bytes') and \
+                                                   isinstance(file_obj.get('mimeType'), str) and \
+                                                   file_obj['mimeType'].startswith('audio/'):
+                                                    audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
+                                                    print(f"Extracted audio from string JSON response: {file_obj['mimeType']}")
+                                                    break
+                        except Exception as e:
+                            print(f"Failed to parse content as JSON: {e}")
+                            # Continue to other patterns if this one fails
                     
                     if audio_data_extracted:
                         audio_bytes, audio_mime_type = audio_data_extracted
@@ -151,28 +208,58 @@ def chat_box(
                         # Original behavior: display dict as JSON code
                         import json
                         try:
+                            # Check if this is a string that looks like a JSON object containing audio
+                            if isinstance(content, str) and content.startswith('{') and 'send_task' in content and 'audio/mpeg' in content:
+                                try:
+                                    # Try to parse as JSON and check for pattern match again
+                                    json_obj = json.loads(content)
+                                    if 'id' in json_obj and json_obj.get('name') == 'send_task' and 'response' in json_obj:
+                                        response_data = json_obj['response']
+                                        if 'result' in response_data and isinstance(response_data['result'], list):
+                                            audio_data_extracted = None
+                                            for item in response_data['result']:
+                                                if isinstance(item, dict) and item.get('type') == 'file' and 'file' in item:
+                                                    file_obj = item['file']
+                                                    if isinstance(file_obj, dict) and \
+                                                       file_obj.get('bytes') and \
+                                                       isinstance(file_obj.get('mimeType'), str) and \
+                                                       file_obj['mimeType'].startswith('audio/'):
+                                                        audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
+                                                        print(f"Last-chance extraction of audio: {file_obj['mimeType']}")
+                                                        break
+                                            
+                                            if audio_data_extracted:
+                                                audio_bytes, audio_mime_type = audio_data_extracted
+                                                audio_src_extracted = f"data:{audio_mime_type};base64,{audio_bytes}"
+                                                _render_audio(audio_src_extracted)
+                                                return
+                                except Exception as e:
+                                    print(f"Failed in last-chance extraction: {e}")
+                                    # Continue with normal display if extraction fails
+                            
+                            # Normal JSON display
                             formatted_content = json.dumps(content, indent=2)
                             me.code(
                                 formatted_content,
                                 language="json",
-                            style=me.Style(
-                                font_family='Roboto Mono, monospace',
-                                box_shadow=(
-                                    '0 1px 2px 0 rgba(60, 64, 67, 0.3), '
-                                    '0 1px 3px 1px rgba(60, 64, 67, 0.15)'
+                                style=me.Style(
+                                    font_family='Roboto Mono, monospace',
+                                    box_shadow=(
+                                        '0 1px 2px 0 rgba(60, 64, 67, 0.3), '
+                                        '0 1px 3px 1px rgba(60, 64, 67, 0.15)'
+                                    ),
+                                    padding=me.Padding(top=5, left=15, right=15, bottom=5),
+                                    margin=me.Margin(top=5, left=0, right=0, bottom=5),
+                                    background=(
+                                        me.theme_var('primary-container')
+                                        if role == 'user'
+                                        else me.theme_var('secondary-container')
+                                    ),
+                                    border_radius=15,
+                                    max_height="400px",
+                                    overflow="auto",
                                 ),
-                                padding=me.Padding(top=5, left=15, right=15, bottom=5),
-                                margin=me.Margin(top=5, left=0, right=0, bottom=5),
-                                background=(
-                                    me.theme_var('primary-container')
-                                    if role == 'user'
-                                    else me.theme_var('secondary-container')
-                                ),
-                                border_radius=15,
-                                max_height="400px",
-                                overflow="auto",
-                            ),
-                        )
+                            )
                         except Exception as e:
                             print(f"Error formatting dictionary content: {e}")
                             me.text(f"Error displaying content: {str(e)}")
