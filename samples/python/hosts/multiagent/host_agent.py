@@ -260,25 +260,26 @@ def convert_part(part: Part, tool_context: ToolContext):
                 )
             )
             tool_context.save_artifact(file_id, file_part)
-            
-            # For audio files, provide a more descriptive text response
-            if part.file.mimeType and 'audio' in part.file.mimeType:
-                tool_context.actions.skip_summarization = True
-                tool_context.actions.escalate = True
-                return f"[Audio file generated successfully. Type: {part.file.mimeType}]"
-            # For images, also provide a descriptive text
-            elif part.file.mimeType and 'image' in part.file.mimeType:
-                tool_context.actions.skip_summarization = True
-                tool_context.actions.escalate = True
-                return f"[Image file generated successfully. Type: {part.file.mimeType}]"
-            # For other file types
-            else:
-                tool_context.actions.skip_summarization = True
-                tool_context.actions.escalate = True
-                return DataPart(data={'artifact-file-id': file_id})
+
+            base64_content = base64.b64encode(file_bytes).decode('utf-8')
+            tool_context.actions.skip_summarization = True
+            tool_context.actions.escalate = True
+            return FilePart(
+                file=FileContent(
+                    bytes=base64_content,
+                    mimeType=part.file.mimeType,
+                    name=file_id,
+                )
+            )
         # For URI-based files
         elif part.file.uri:
             tool_context.actions.skip_summarization = True
             tool_context.actions.escalate = True
-            return f"[File available at: {part.file.uri}]"
+            return FilePart(
+                file=FileContent(
+                    uri=part.file.uri,
+                    mimeType=part.file.mimeType,
+                    name=file_id,
+                )
+            )
     return f'Unknown type: {part.type}'
