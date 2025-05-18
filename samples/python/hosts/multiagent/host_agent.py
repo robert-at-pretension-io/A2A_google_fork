@@ -6,6 +6,8 @@ from common.client import A2ACardResolver
 from common.types import (
     AgentCard,
     DataPart,
+    FileContent,
+    FilePart,
     Message,
     Part,
     Task,
