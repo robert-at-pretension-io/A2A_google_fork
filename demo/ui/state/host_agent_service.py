@@ -264,8 +264,16 @@ def extract_content(
                 # Add a debug print to see what kind of data we have
                 print(f"Processing file part with mimeType: {p.file.mimeType}, bytes: {type(p.file.bytes)} length: {len(p.file.bytes) if p.file.bytes else 0}")
                 
-                # Ensure we're using the base64-encoded bytes directly
-                parts.append((p.file.bytes, p.file.mimeType))
+                # When served from server.py's _files method, we'll get back a URL like /message/file/{id}
+                # But when coming directly from an agent, we need to handle the base64 content properly
+                # Create a data URI for audio content to be played in the browser
+                if p.file.mimeType and 'audio' in p.file.mimeType:
+                    # Create a data URI format for audio that can be played directly
+                    data_uri = f"data:{p.file.mimeType};base64,{p.file.bytes}"
+                    parts.append((data_uri, p.file.mimeType))
+                else:
+                    # For other file types, pass the bytes as before
+                    parts.append((p.file.bytes, p.file.mimeType))
             else:
                 print(f"Processing file part with URI: {p.file.uri}")
                 parts.append((p.file.uri, p.file.mimeType))
@@ -282,7 +290,22 @@ def extract_content(
     
     # Debug print the content we extracted
     print(f"Extracted {len(parts)} parts: {[(type(p[0]), p[1]) for p in parts]}")
-    return parts
+    
+    # Filter out any additional text parts that just say "[Audio file generated successfully]" or similar 
+    # as these are just debug messages and we already have the audio file
+    filtered_parts = []
+    has_audio = any('audio' in p[1] for p in parts)
+    
+    for p in parts:
+        # Skip debug text messages about audio files if we have an actual audio file
+        if (has_audio and p[1] == 'text/plain' and 
+            isinstance(p[0], str) and 
+            ("[Audio file generated" in p[0] or "Audio file generated" in p[0])):
+            print(f"Filtering out debug message: {p[0][:30]}...")
+            continue
+        filtered_parts.append(p)
+    
+    return filtered_parts
 
 
 def extract_message_id(message: Message) -> str:

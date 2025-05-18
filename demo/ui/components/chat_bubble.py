@@ -67,11 +67,22 @@ def chat_box(
                     print(f"Converted to data URI, starts with: {content[:50]}...")
                 
                 # Create an HTML5 audio player element with sandboxed mode to avoid warnings
+                # Added fallback text in case audio can't be played
                 me.html(
-                    f'<audio controls src="{content}" style="max-width: 300px;"></audio>',
+                    f'''
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <audio controls src="{content}" style="max-width: 300px; margin: 5px 0;">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <span style="font-size: 12px; color: #666;">Audio message</span>
+                    </div>
+                    ''',
                     style=me.Style(
                         margin=me.Margin(top=5, left=0, right=0, bottom=5),
                         padding=me.Padding(top=1, left=15, right=15, bottom=1),
+                        background=me.theme_var('secondary-container'),
+                        border_radius=15,
+                        box_shadow='0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)',
                     ),
                     mode='sandboxed',
                 )
