@@ -74,8 +74,8 @@ cd deploy/kubernetes/scripts
 
 # Tag and push to Docker Hub
 docker tag a2a-ui:latest yourusername/a2a-ui:latest
-docker tag a2a-agent-google-adk:latest yourusername/a2a-agent-google-adk:latest
-docker tag a2a-agent-repo-cloner:latest yourusername/a2a-agent-repo-cloner:latest
+docker tag a2a-agent:google_adk yourusername/a2a-agent-google-adk:latest
+docker tag a2a-agent:repo_cloner yourusername/a2a-agent-repo-cloner:latest
 
 docker push yourusername/a2a-ui:latest
 docker push yourusername/a2a-agent-google-adk:latest
@@ -226,14 +226,23 @@ cd deploy/kubernetes/scripts
 ./build.sh
 
 # Push to registry
-for img in ui agent-google-adk agent-repo-cloner; do
-  docker tag a2a-$img:latest $DOCKER_USER/a2a-$img:latest
-  docker push $DOCKER_USER/a2a-$img:latest
+for img in ui google_adk repo_cloner; do
+  if [ "$img" = "ui" ]; then
+    docker tag a2a-ui:latest $DOCKER_USER/a2a-ui:latest
+    docker push $DOCKER_USER/a2a-ui:latest
+  else
+    docker tag a2a-agent:$img $DOCKER_USER/a2a-agent-${img//_/\-}:latest
+    docker push $DOCKER_USER/a2a-agent-${img//_/\-}:latest
+  fi
 done
 
 # Update manifests with your images
 cd ../manifests
-find . -name "*.yaml" -exec sed -i "s|image: a2a-|image: $DOCKER_USER/a2a-|g" {} \;
+# Update UI image
+sed -i "s|image: a2a-ui:latest|image: $DOCKER_USER/a2a-ui:latest|g" ui/deployment.yaml
+# Update agent images
+find agents -name "deployment.yaml" -exec \
+  sed -i -E "s|image: a2a-agent:(.*)|image: $DOCKER_USER/a2a-agent-\1:latest|" {} \;
 
 # Deploy
 kubectl create namespace a2a
