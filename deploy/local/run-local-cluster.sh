@@ -18,9 +18,9 @@ fi
 echo "Cleaning up any previous containers..."
 docker compose down --volumes
 
-# Rebuild all images from scratch (to ensure recent code changes are captured)
-echo "Building fresh images..."
-docker compose build --no-cache
+# Build images only when sources have changed
+echo "Building images if needed..."
+docker compose build
 
 # Start services
 echo "Starting services..."

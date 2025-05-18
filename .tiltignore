@@ -1,0 +1,4 @@
+# Ignore docs and test directories to prevent unnecessary rebuilds
+./docs
+./tests
+*.md

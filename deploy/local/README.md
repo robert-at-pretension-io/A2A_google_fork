@@ -19,7 +19,8 @@ This directory contains Docker Compose configuration for running the A2A demo ap
    ```
 
    Run this script from anywhere (e.g. `deploy/local/run-local-cluster.sh` from the
-   repo root). It builds the images and starts the services in the background.
+   repo root). It reuses cached Docker layers and only rebuilds images when sources
+   have changed.
 
 3. **Access the UI:**
 

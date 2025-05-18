@@ -1,0 +1,11 @@
+# Exclude version control and config files
+.git
+.github
+*.md
+*.toml
+*.lock
+noxfile.py
+docs/
+tests/
+**/__pycache__/
+**/*.pyc
