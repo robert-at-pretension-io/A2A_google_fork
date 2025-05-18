@@ -278,15 +278,38 @@ def extract_content(
                 print(f"Processing file part with URI: {p.file.uri}")
                 parts.append((p.file.uri, p.file.mimeType))
         elif p.type == 'data':
-            try:
-                jsonData = json.dumps(p.data)
-                if 'type' in p.data and p.data['type'] == 'form':
-                    parts.append((p.data, 'form'))
+            # Some agents return file-like data wrapped in a DataPart
+            if isinstance(p.data, dict) and p.data.get('type') == 'file':
+                file_info = p.data.get('file', {})
+                mime_type = file_info.get('mimeType', 'application/octet-stream')
+                file_bytes = file_info.get('bytes')
+                file_uri = file_info.get('uri')
+
+                if file_bytes:
+                    if 'audio' in mime_type:
+                        data_uri = f"data:{mime_type};base64,{file_bytes}"
+                        parts.append((data_uri, mime_type))
+                    else:
+                        parts.append((file_bytes, mime_type))
+                elif file_uri:
+                    parts.append((file_uri, mime_type))
                 else:
-                    parts.append((jsonData, 'application/json'))
-            except Exception as e:
-                print('Failed to dump data', e)
-                parts.append(('<data>', 'text/plain'))
+                    try:
+                        jsonData = json.dumps(p.data)
+                        parts.append((jsonData, 'application/json'))
+                    except Exception as e:  # pylint: disable=broad-except
+                        print('Failed to dump data', e)
+                        parts.append(('<data>', 'text/plain'))
+            else:
+                try:
+                    jsonData = json.dumps(p.data)
+                    if 'type' in p.data and p.data['type'] == 'form':
+                        parts.append((p.data, 'form'))
+                    else:
+                        parts.append((jsonData, 'application/json'))
+                except Exception as e:  # pylint: disable=broad-except
+                    print('Failed to dump data', e)
+                    parts.append(('<data>', 'text/plain'))
     
     # Debug print the content we extracted
     print(f"Extracted {len(parts)} parts: {[(type(p[0]), p[1]) for p in parts]}")
