@@ -3,7 +3,7 @@ import pandas as pd
 
 from common.types import AgentCard
 from state.agent_state import AgentState
-from state.host_agent_service import DeleteRemoteAgent, ListRemoteAgents
+from state.host_agent_service import DeleteAgent, ListAgents
 
 
 @me.component
@@ -87,10 +87,10 @@ def add_agent(e: me.ClickEvent):  # pylint: disable=unused-argument
 async def on_table_click(e: me.TableClickEvent):
     """Handle table clicks including delete action."""
     try:
-        # Get the current agents from the ListRemoteAgents function
+        # Get the current agents from the ListAgents function
         # Using explicit import to avoid any potential issues with closures
-        from state.host_agent_service import ListRemoteAgents
-        agents = await ListRemoteAgents()
+        from state.host_agent_service import ListAgents
+        agents = await ListAgents()
         
         # Build data from current agents
         df_data = {
@@ -135,9 +135,9 @@ async def on_table_click(e: me.TableClickEvent):
         agent_url = df_data['Address'][row_index]
         try:
             # Import explicitly to avoid NameError
-            from state.host_agent_service import DeleteRemoteAgent
+            from state.host_agent_service import DeleteAgent
             # Delete the agent
-            success = await DeleteRemoteAgent(agent_url)
+            success = await DeleteAgent(agent_url)
             print(f"Agent deletion {'succeeded' if success else 'failed'}: {agent_url}")
             # Yield to trigger UI update
             yield
