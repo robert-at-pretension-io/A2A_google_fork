@@ -1,3 +1,2 @@
-# Import the AgentWithTaskManager and AgentTaskManager class directly from the google_adk agent
-# This is the simplest approach as the implementation is identical
-from google_adk.task_manager import AgentWithTaskManager, AgentTaskManager
+# Import the AgentWithTaskManager and AgentTaskManager class directly from common server module
+from common.server.task_manager import AgentTaskManager, BaseAgentWithTaskManager as AgentWithTaskManager
