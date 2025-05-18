@@ -1,2 +1,7 @@
 # Minimal Tiltfile for A2A demo
+
+# Load environment variables from .env so Tilt uses the same values as Docker Compose
+load('tilt_modules/dotenv/Tiltfile', 'dotenv')
+dotenv('.env')
+
 docker_compose('./deploy/local/docker-compose.yaml')
