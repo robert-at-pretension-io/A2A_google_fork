@@ -173,9 +173,9 @@ def chat_box(
                                 overflow="auto",
                             ),
                         )
-                    except Exception as e:
-                        print(f"Error formatting dictionary content: {e}")
-                        me.text(f"Error displaying content: {str(e)}")
+                        except Exception as e:
+                            print(f"Error formatting dictionary content: {e}")
+                            me.text(f"Error displaying content: {str(e)}")
                 else:
                     # Regular string content 
                     me.markdown(
