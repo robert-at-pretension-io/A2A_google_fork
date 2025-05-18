@@ -1,4 +1,77 @@
-# Ignore docs and test directories to prevent unnecessary rebuilds
-./docs
-./tests
+# Documentation files - changes shouldn't trigger rebuilds
 *.md
+*.txt
+*.rst
+*.adoc
+./docs/
+**/README*
+**/LICENSE*
+**/CODE_OF_CONDUCT*
+**/CONTRIBUTING*
+**/SECURITY*
+**/CHANGELOG*
+**/HISTORY*
+
+# Test directories
+./tests/
+**/*_test.py
+**/*_tests.py
+**/test_*.py
+**/tests_*.py
+**/.pytest_cache/
+
+# Configuration files
+*.toml
+*.yaml
+*.yml
+*.json
+*.lock
+*.ini
+*.cfg
+.pre-commit-config.yaml
+.editorconfig
+.flake8
+mkdocs.yml
+pyproject.toml
+**/pyproject.toml
+
+# Git and GitHub files
+.git/
+.github/
+.gitignore
+
+# Build artifacts and caches
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/*.so
+**/*.egg-info/
+**/*.egg
+**/.mypy_cache/
+htmlcov/
+build/
+dist/
+
+# Editor files
+.idea/
+.vscode/
+.vs/
+**/*.swp
+**/*.swo
+**/*~
+**/*.bak
+**/*.sublime*
+
+# Project-specific files that shouldn't trigger rebuilds
+.aider*
+**/.aider*
+hardcoded_values.md
+lychee.toml
+tilt_modules/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+agent_health_check.md

@@ -32,7 +32,8 @@ members = [
     "agents/mindsdb",
     "agents/ag2",
     "agents/elevenlabs_tts",
-    "agents/vertex_image_gen"
+    "agents/vertex_image_gen",
+    "agents/repo_cloner"
 ]
 
 [build-system]

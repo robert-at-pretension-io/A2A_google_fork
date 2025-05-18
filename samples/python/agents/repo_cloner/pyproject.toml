@@ -4,15 +4,18 @@ version = "0.1.0"
 description = "ADK agent for cloning Git repositories"
 requires-python = ">=3.9"
 dependencies = [
-    "a2a-common-types",
-    "starlette",
-    "python-dotenv",
-    "uvicorn",
-    "click",
-    "sse-starlette",
-    "pydantic>=2.0.0",
-    "google-cloud-aiplatform",
+    "a2a-samples",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.8",
+    "google-adk>=0.0.3",
+    "google-genai>=1.9.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.uv.sources]
+a2a-samples = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

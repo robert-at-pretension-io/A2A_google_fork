@@ -6,11 +6,10 @@ run:
 import os
 
 import mesop as me
-
 from components.api_key_dialog import api_key_dialog
 from components.page_scaffold import page_scaffold
 from dotenv import load_dotenv
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, FastAPI, Request, Form
 from fastapi.middleware.wsgi import WSGIMiddleware
 from pages.agent_list import agent_list_page
 from pages.conversation import conversation_page
@@ -139,6 +138,12 @@ app = FastAPI()
 router = APIRouter()
 agent_server = ConversationServer(router)
 app.include_router(router)
+
+@router.post("/audio-upload")
+async def audio_upload(request: Request, audio_data: str = Form(...), filename: str = Form(...)):
+    """Handle audio data upload from the recorder"""
+    # Just return success - we'll handle state differently
+    return {"success": True}
 
 app.mount(
     '/',

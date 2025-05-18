@@ -13,6 +13,11 @@ def on_selection_change_output_types(e: me.SelectSelectionChangeEvent):
     s.output_mime_types = e.values
 
 
+def on_audio_recording_toggle(e: me.CheckboxChangeEvent):
+    s = me.state(SettingsState)
+    s.audio_recording_enabled = e.value
+
+
 def on_api_key_change(e: me.InputBlurEvent):
     s = me.state(AppState)
     s.api_key = e.value
@@ -150,17 +155,45 @@ def settings_page_content():
                         me.divider()
 
                 # Output Types Section
-                me.select(
-                    label='Supported Output Types',
-                    options=[
-                        me.SelectOption(label='Image', value='image/*'),
-                        me.SelectOption(
-                            label='Text (Plain)', value='text/plain'
+                with me.box(
+                    style=me.Style(
+                        display='flex',
+                        flex_direction='column',
+                        gap=15,
+                    )
+                ):
+                    me.text(
+                        'Media Settings',
+                        type='headline-6',
+                        style=me.Style(
+                            margin=me.Margin(bottom=10),
+                            font_family='Google Sans',
                         ),
-                    ],
-                    on_selection_change=on_selection_change_output_types,
-                    style=me.Style(width=500),
-                    multiple=True,
-                    appearance='outline',
-                    value=settings_state.output_mime_types,
-                )
+                    )
+                    
+                    # Output types selection
+                    me.select(
+                        label='Supported Output Types',
+                        options=[
+                            me.SelectOption(label='Image', value='image/*'),
+                            me.SelectOption(
+                                label='Text (Plain)', value='text/plain'
+                            ),
+                            me.SelectOption(
+                                label='Audio', value='audio/mpeg'
+                            ),
+                        ],
+                        on_selection_change=on_selection_change_output_types,
+                        style=me.Style(width=500),
+                        multiple=True,
+                        appearance='outline',
+                        value=settings_state.output_mime_types,
+                    )
+                    
+                    # Audio recording toggle
+                    me.checkbox(
+                        label='Enable audio recording',
+                        on_change=on_audio_recording_toggle,
+                        value=settings_state.audio_recording_enabled,
+                        style=me.Style(margin=me.Margin(top=10)),
+                    )

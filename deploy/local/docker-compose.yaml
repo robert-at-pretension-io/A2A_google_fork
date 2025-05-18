@@ -16,6 +16,8 @@ services:
         condition: service_started
       agent-elevenlabs-tts:
         condition: service_started
+      agent-repo-cloner:
+        condition: service_started
     restart: unless-stopped
 
   agent-google-adk:
@@ -66,6 +68,25 @@ services:
     # Mount Google Cloud credentials if running locally
     volumes:
       - ${HOME}/.config/gcloud:/root/.config/gcloud
+    networks:
+      - a2a-network
+    restart: unless-stopped
+    
+  agent-repo-cloner:
+    build:
+      context: ../..
+      dockerfile: deploy/kubernetes/docker/agent/Dockerfile
+      args:
+        AGENT_DIR: repo_cloner
+    ports:
+      - "10003:10003"
+    env_file:
+      - .env
+    environment:
+      - A2A_SERVICE_HOST=agent-repo-cloner
+    # Mount host's git credentials for private repo access
+    volumes:
+      - ${HOME}/.gitconfig:/root/.gitconfig
     networks:
       - a2a-network
     restart: unless-stopped

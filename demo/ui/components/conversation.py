@@ -122,6 +122,27 @@ def conversation():
             else:
                 chat_bubble(message, message.message_id)
 
+        # Add audio recorder if enabled in settings
+        settings_state = me.state(SettingsState)
+        if getattr(settings_state, "audio_recording_enabled", True):
+            from .audio_recorder import audio_recorder
+            from .send_audio_button import send_audio_button
+            
+            with me.box(
+                style=me.Style(
+                    display='flex',
+                    flex_direction='row',
+                    gap=10,
+                    align_items='center',
+                    justify_content='center',
+                    width='100%',
+                    margin=me.Margin(bottom=10),
+                )
+            ):
+                audio_recorder()
+                send_audio_button()
+                
+        # Text input area
         with me.box(
             style=me.Style(
                 display='flex',

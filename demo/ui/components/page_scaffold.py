@@ -1,7 +1,6 @@
 import mesop as me
 import mesop.labs as mel
 
-from state.host_agent_service import UpdateAppState
 from state.state import AppState
 from styles.styles import (
     MAIN_COLUMN_STYLE,
@@ -19,6 +18,9 @@ async def refresh_app_state(e: mel.WebEvent):  # pylint: disable=unused-argument
     """Refresh app state event handler"""
     yield
     app_state = me.state(AppState)
+    
+    # Import UpdateAppState here to avoid circular imports
+    from state.host_agent_service import UpdateAppState
     await UpdateAppState(app_state, app_state.current_conversation_id)
     yield
 

@@ -2,6 +2,12 @@
 
 This directory contains the Kubernetes manifests and scripts for deploying the A2A demo application and its agents in a Kubernetes cluster.
 
+> **Related Documentation**:
+> - [Main A2A Protocol Documentation](https://google.github.io/A2A/)
+> - [Main Project README](/README.md)
+> - [Local Docker Deployment](/deploy/local/README.md)
+> - [Sample Agents Documentation](/samples/python/agents/README.md)
+
 ## Overview
 
 The deployment consists of:
@@ -68,6 +74,7 @@ The deployment consists of:
 | google_adk | 10002 | Google API Key | Basic reimbursement agent |
 | elevenlabs_tts | 10005 | ElevenLabs API Key | Text-to-speech agent |
 | vertex_image_gen | 10006 | Vertex AI, GCP Project | Image generation agent |
+| repo_cloner | 10003 | Git CLI | Git repository cloning agent |
 
 ## Directory Structure
 
@@ -89,7 +96,10 @@ kubernetes/
 │       ├── elevenlabs_tts/
 │       │   ├── deployment.yaml
 │       │   └── service.yaml
-│       └── vertex_image_gen/
+│       ├── vertex_image_gen/
+│       │   ├── deployment.yaml
+│       │   └── service.yaml
+│       └── repo_cloner/
 │           ├── deployment.yaml
 │           └── service.yaml
 ├── docker/                   # Dockerfiles
@@ -118,6 +128,7 @@ To access a deployed agent from the UI:
 2. Add the agent using its Kubernetes service name and port:
    - Example: `a2a-agent-google-adk:10002`
    - Example: `a2a-agent-vertex-image-gen:10006`
+   - Example: `a2a-agent-repo-cloner:10003`
 
 ## Customization
 
@@ -181,6 +192,7 @@ If you encounter connection failures between the UI and agents or see warnings a
    - Google ADK Agent: 10002
    - ElevenLabs TTS Agent: 10005
    - Vertex Image Gen Agent: 10006
+   - Git Repository Cloner Agent: 10003
 
 4. **Test the Connection Inside the Cluster**:
    You can run a debug pod to test connectivity:

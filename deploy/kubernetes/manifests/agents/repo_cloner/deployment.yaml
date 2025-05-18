@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-agent-repo-cloner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-agent-repo-cloner
+  template:
+    metadata:
+      labels:
+        app: a2a-agent-repo-cloner
+    spec:
+      containers:
+      - name: agent
+        image: a2a-agent:repo_cloner
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 10003
+        envFrom:
+        - configMapRef:
+            name: a2a-config
+        - secretRef:
+            name: a2a-secrets
+        # For persistent Git clones, we need a volume to store the cloned repos
+        volumeMounts:
+        - name: git-repos
+          mountPath: /tmp/git-repos
+      volumes:
+      - name: git-repos
+        emptyDir: {}

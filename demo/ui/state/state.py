@@ -102,5 +102,16 @@ class SettingsState:
         default_factory=lambda: [
             'image/*',
             'text/plain',
+            'audio/mpeg',
         ]
     )
+    
+    input_mime_types: list[str] = dataclasses.field(
+        default_factory=lambda: [
+            'text/plain',
+            'audio/wav',
+            'audio/mpeg',
+        ]
+    )
+    
+    audio_recording_enabled: bool = True

@@ -44,16 +44,23 @@ As AI agents become more prevalent, their ability to interoperate is crucial for
   - [Multi-Agent Web App](/demo/README.md)
   - CLI ([Python](/samples/python/hosts/cli/README.md), [JS](/samples/js/README.md))
   - [Local Docker Deployment](/deploy/local/README.md)
-- 🤖 Use our [sample agents](/samples/python/agents/README.md) to see how to bring A2A to agent frameworks
-  - [Agent Development Kit (ADK)](/samples/python/agents/google_adk/README.md)
-  - [CrewAI](/samples/python/agents/crewai/README.md)
-  - [Enterprise Data Agent (Gemini + Mindsdb)](/samples/python/agents/mindsdb/README.md)
-  - [LangGraph](/samples/python/agents/langgraph/README.md)
-  - [Genkit](/samples/js/src/agents/README.md)
-  - [LlamaIndex](/samples/python/agents/llama_index_file_chat/README.md)
-  - [Marvin](/samples/python/agents/marvin/README.md)
-  - [Semantic Kernel](/samples/python/agents/semantickernel/README.md)
-  - [AG2 + MCP](/samples/python/agents/ag2/README.md)
+- 🤖 **Sample Agents** - explore our [sample agent implementations](/samples/python/agents/README.md):
+  - Framework Integrations:
+    - [Agent Development Kit (ADK)](/samples/python/agents/google_adk/README.md)
+    - [CrewAI](/samples/python/agents/crewai/README.md)
+    - [LangGraph](/samples/python/agents/langgraph/README.md)
+    - [LlamaIndex](/samples/python/agents/llama_index_file_chat/README.md)
+    - [Marvin](/samples/python/agents/marvin/README.md)
+    - [Semantic Kernel](/samples/python/agents/semantickernel/README.md)
+    - [AG2 + MCP](/samples/python/agents/ag2/README.md)
+    - [Genkit (JavaScript)](/samples/js/src/agents/README.md)
+  - Specialized Capability Agents:
+    - [Enterprise Data Agent (Gemini + Mindsdb)](/samples/python/agents/mindsdb/README.md)
+    - [ElevenLabs TTS](/samples/python/agents/elevenlabs_tts/README.md)
+    - [Vertex AI Image Generator](/samples/python/agents/vertex_image_gen/README.md)
+    - [Git Repository Cloner](/samples/python/agents/repo_cloner/README.md)
+
+  See the [full agent development guide](/samples/python/agents/README.md#creating-a-new-agent) for instructions on creating your own agent.
 
 ## Troubleshooting
 

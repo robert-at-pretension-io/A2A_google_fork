@@ -8,3 +8,5 @@ resources:
   - ../../manifests/ui/service.yaml
   - ../../manifests/agents/google_adk/deployment.yaml
   - ../../manifests/agents/google_adk/service.yaml
+  - ../../manifests/agents/repo_cloner/deployment.yaml
+  - ../../manifests/agents/repo_cloner/service.yaml

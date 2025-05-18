@@ -1,22 +1,37 @@
+# repo_cloner_agent.py
 from __future__ import annotations
+
+"""ADK tool + agent that can clone public *or* private Git/GitLab repositories.
+
+Key improvements over previous draft
+------------------------------------
+* Early check that the `git` executable exists.
+* Pathlib everywhere for consistency.
+* Token‑auth username automatically chosen based on host (GitHub ⇒ ``x-access-token``,
+  GitLab ⇒ ``oauth2``; overridable via ``username_hint``).
+* Uses a one‑shot *credential‑store* helper so the PAT never appears on the command line
+  (and the helper file is shredded immediately afterwards).
+* Safer temporary‑directory handling – always clone into a child of the temp dir so we
+  can detach the finaliser without leaking a random prefix.
+* Fallback logger so the tool is still usable when ADK does not inject ``tool_context``.
+* Strict Pydantic validation + richer doc‑strings.
+"""
 
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
-import logging
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
-from google.adk.tools import BaseTool, ToolContext
-from google.adk.agents import Agent
-from common.server.task_manager import TaskManager
-from task_manager import AgentWithTaskManager
-
-logger = logging.getLogger(__name__)
+try:
+    from google.adk.tools import BaseTool, ToolContext  # type: ignore
+    from google.adk.agents import Agent  # type: ignore
+except ImportError as exc:  # graceful msg if ADK not installed
+    sys.exit("google‑adk is required for this script → pip install google‑cloud‑aiplatform")
 
 # --------------------------------------------------------------------------- #
 # 1️⃣  Pydantic schemas
@@ -98,14 +113,11 @@ def _logger(ctx: ToolContext | None):
 # 3️⃣  Tool implementation
 # --------------------------------------------------------------------------- #
 class CloneRepoTool(BaseTool):
-    def __init__(self):
-        super().__init__(
-            name="clone_repo",
-            description=(
-                "Clone a public or private Git repository. Supports optional branch, depth, "
-                "destination directory and token‑based auth (GitHub, GitLab)."
-            )
-        )
+    name = "clone_repo"
+    description = (
+        "Clone a public or private Git repository. Supports optional branch, depth, "
+        "destination directory and token‑based auth (GitHub, GitLab)."
+    )
 
     async def run_async(
         self,
@@ -206,85 +218,11 @@ class CloneRepoTool(BaseTool):
 
 
 # --------------------------------------------------------------------------- #
-# 4️⃣  Agent Class
+# 4️⃣  Agent wiring
 # --------------------------------------------------------------------------- #
-class RepoCloneAgent(AgentWithTaskManager):
-    """An agent that handles Git repository cloning."""
-
-    SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
-
-    def __init__(self):
-        self._agent = repo_cloner_agent
-        self._user_id = 'remote_agent'
-        self._runner = self._build_runner()
-
-    def get_processing_message(self) -> str:
-        return 'Processing the repository cloning request...'
-    
-    def invoke(self, query, session_id) -> dict:
-        """Process a user query and return a response.
-        
-        Args:
-            query: The text query from the user
-            session_id: Unique ID for the conversation
-            
-        Returns:
-            Dict with response data
-        """
-        from google.adk.types import Content, Part
-        
-        session = self._runner.session_service.get_session(
-            app_name=self._agent.name,
-            user_id=self._user_id,
-            session_id=session_id,
-        )
-        content = Content(
-            role='user', parts=[Part.from_text(text=query)]
-        )
-        if session is None:
-            session = self._runner.session_service.create_session(
-                app_name=self._agent.name,
-                user_id=self._user_id,
-                state={},
-                session_id=session_id,
-            )
-        events = list(
-            self._runner.run(
-                user_id=self._user_id,
-                session_id=session.id,
-                new_message=content,
-            )
-        )
-        if not events or not events[-1].content or not events[-1].content.parts:
-            return {"text": "No response from the repository cloning agent."}
-        
-        response_text = '\n'.join([p.text for p in events[-1].content.parts if p.text])
-        return {"text": response_text}
-        
-    def _build_runner(self):
-        from google.adk.runners import Runner
-        from google.adk.artifacts import InMemoryArtifactService
-        from google.adk.sessions import InMemorySessionService
-        from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
-        
-        return Runner(
-            app_name=self._agent.name,
-            agent=self._agent,
-            artifact_service=InMemoryArtifactService(),
-            session_service=InMemorySessionService(),
-            memory_service=InMemoryMemoryService(),
-        )
-
-
-# --------------------------------------------------------------------------- #
-# 5️⃣  Agent definition
-# --------------------------------------------------------------------------- #
-# Create the tool instance using the explicitly initialized BaseTool
-clone_repo_tool = CloneRepoTool()
-
 repo_cloner_agent = Agent(
     name="git_repo_cloner",
-    model="gemini-2.0-flash-001",  # Using the same model as the reimbursement agent
+    model="gemini-1.5-flash-latest",
     instruction=(
         "You are a coding assistant who can clone public or private Git repositories. "
         "When the user asks to clone, prepare a `clone_repo` tool call with `repo_url`, "
@@ -292,5 +230,35 @@ repo_cloner_agent = Agent(
         "tokens in your responses. After the tool returns, summarise the result and give "
         "the absolute path if cloning succeeded."
     ),
-    tools=[clone_repo_tool],
+    tools=[CloneRepoTool()],
 )
+
+
+# --------------------------------------------------------------------------- #
+# 5️⃣  CLI test harness (optional) – run `python repo_cloner_agent.py`
+# --------------------------------------------------------------------------- #
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Quick CLI test for the clone tool")
+    parser.add_argument("url", help="Repository HTTPS URL")
+    parser.add_argument("--branch")
+    parser.add_argument("--depth", type=int)
+    parser.add_argument("--dest-dir")
+    parser.add_argument("--token")
+    parser.add_argument("--username-hint")
+    args_ns = parser.parse_args()
+
+    request = f"Clone {args_ns.url}"
+    if args_ns.branch:
+        request += f" on branch {args_ns.branch}"
+    if args_ns.depth:
+        request += f" with depth {args_ns.depth}"
+    if args_ns.dest_dir:
+        request += f" into {args_ns.dest_dir}"
+    if args_ns.token:
+        request += " using this token: <REDACTED>"
+
+    print("USER:", request)
+    response = repo_cloner_agent.chat(request)  # type: ignore
+    print("ASSISTANT:", response)

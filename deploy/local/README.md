@@ -2,6 +2,12 @@
 
 This directory contains Docker Compose configuration for running the A2A demo application locally.
 
+> **Related Documentation**:
+> - [Main A2A Protocol Documentation](https://google.github.io/A2A/)
+> - [Main Project README](/README.md)
+> - [Kubernetes Deployment](/deploy/kubernetes/README.md)
+> - [Sample Agents Documentation](/samples/python/agents/README.md)
+
 ## Getting Started
 
 1. **Create your environment file:**
@@ -32,6 +38,7 @@ This directory contains Docker Compose configuration for running the A2A demo ap
    - `agent-google-adk:10002`
    - `agent-elevenlabs-tts:10005`
    - `agent-vertex-image-gen:10006` (if using Vertex AI)
+   - `agent-repo-cloner:10003` (for Git repository cloning)
    
    Note: When running in Docker, agents register using their Docker service names, not localhost or IP addresses. This is controlled by the `A2A_SERVICE_HOST` environment variable in docker-compose.yaml.
 
@@ -89,6 +96,7 @@ If you see errors like "Connection refused" or "Warning: there are non-text part
    - Google ADK Agent: 10002
    - ElevenLabs TTS Agent: 10005
    - Vertex Image Gen Agent: 10006
+   - Git Repository Cloner Agent: 10003
 
 ## Stopping the Services
 
