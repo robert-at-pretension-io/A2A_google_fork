@@ -27,6 +27,28 @@ def chat_bubble(message: StateMessage, key: str):
         )
 
 
+def _render_audio(audio_src: str):
+    """Renders an HTML5 audio player for the given audio source."""
+    me.html(
+        f'''
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <audio controls src="{audio_src}" style="max-width: 300px; margin: 5px 0;">
+                Your browser does not support the audio element.
+            </audio>
+            <span style="font-size: 12px; color: #666;">Audio message</span>
+        </div>
+        ''',
+        style=me.Style(
+            margin=me.Margin(top=5, left=0, right=0, bottom=5),
+            padding=me.Padding(top=1, left=15, right=15, bottom=1),
+            background=me.theme_var('secondary-container'),
+            border_radius=15,
+            box_shadow='0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)',
+        ),
+        mode='sandboxed',
+    )
+
+
 def chat_box(
     content: str | dict,
     media_type: str,
@@ -101,36 +123,38 @@ def chat_box(
                     me.text("Error: Could not process audio content")
                     return
                 
-                # Create an HTML5 audio player element with sandboxed mode to avoid warnings
-                # Added fallback text in case audio can't be played
-                me.html(
-                    f'''
-                    <div style="display: flex; flex-direction: column; align-items: center;">
-                        <audio controls src="{audio_src}" style="max-width: 300px; margin: 5px 0;">
-                            Your browser does not support the audio element.
-                        </audio>
-                        <span style="font-size: 12px; color: #666;">Audio message</span>
-                    </div>
-                    ''',
-                    style=me.Style(
-                        margin=me.Margin(top=5, left=0, right=0, bottom=5),
-                        padding=me.Padding(top=1, left=15, right=15, bottom=1),
-                        background=me.theme_var('secondary-container'),
-                        border_radius=15,
-                        box_shadow='0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)',
-                    ),
-                    mode='sandboxed',
-                )
+                _render_audio(audio_src)
             else:
-                # Handle both string and dictionary content types
+                # Handle other content types (text, JSON, or potentially complex dicts with audio)
                 if isinstance(content, dict):
-                    # Convert dictionary to readable format for display
-                    import json
-                    try:
-                        formatted_content = json.dumps(content, indent=2)
-                        me.code(
-                            formatted_content,
-                            language="json",
+                    # Attempt to find and render audio if present in a generic dict structure
+                    audio_data_extracted = None
+                    if 'response' in content and isinstance(content['response'], dict):
+                        response_data = content['response']
+                        if 'result' in response_data and isinstance(response_data['result'], list):
+                            for part in response_data['result']:
+                                if isinstance(part, dict) and part.get('type') == 'file':
+                                    file_obj = part.get('file')
+                                    if isinstance(file_obj, dict) and \
+                                       file_obj.get('bytes') and \
+                                       isinstance(file_obj.get('mimeType'), str) and \
+                                       file_obj['mimeType'].startswith('audio/'):
+                                        audio_data_extracted = (file_obj['bytes'], file_obj['mimeType'])
+                                        print(f"Extracted audio from generic dict: {file_obj['mimeType']}")
+                                        break 
+                    
+                    if audio_data_extracted:
+                        audio_bytes, audio_mime_type = audio_data_extracted
+                        audio_src_extracted = f"data:{audio_mime_type};base64,{audio_bytes}"
+                        _render_audio(audio_src_extracted)
+                    else:
+                        # Original behavior: display dict as JSON code
+                        import json
+                        try:
+                            formatted_content = json.dumps(content, indent=2)
+                            me.code(
+                                formatted_content,
+                                language="json",
                             style=me.Style(
                                 font_family='Roboto Mono, monospace',
                                 box_shadow=(
