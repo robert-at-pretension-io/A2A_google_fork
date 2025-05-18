@@ -28,7 +28,7 @@ def chat_bubble(message: StateMessage, key: str):
 
 
 def chat_box(
-    content: str,
+    content: str | dict,
     media_type: str,
     role: str,
     key: str,
@@ -57,21 +57,56 @@ def chat_box(
                     ),
                 )
             elif media_type == 'audio/mpeg':
-                # Log the content format before processing
-                print(f"Processing audio content: {'Data URI' if content.startswith('data:') else 'Base64' if '/message/file' not in content else 'File URL'}")
+                # Handle both string and dictionary content types for audio
+                audio_src = ""
                 
-                # Ensure proper data URI format
-                if '/message/file' not in content and not content.startswith('data:'):
-                    # This is a base64 string that needs a data URI prefix
-                    content = 'data:audio/mpeg;base64,' + content
-                    print(f"Converted to data URI, starts with: {content[:50]}...")
+                # If content is a dictionary (like from the JSON response)
+                if isinstance(content, dict):
+                    print(f"Received audio content as dictionary: {content.keys() if content else 'empty'}")
+                    
+                    # Extract the file data from dictionary structure
+                    if content.get('type') == 'file' and isinstance(content.get('file'), dict):
+                        file_data = content['file']
+                        mime_type = file_data.get('mimeType', 'audio/mpeg')
+                        
+                        if file_data.get('bytes'):
+                            # Convert bytes to data URI
+                            audio_src = f"data:{mime_type};base64,{file_data['bytes']}"
+                            print(f"Created data URI from bytes, starts with: {audio_src[:50]}...")
+                        elif file_data.get('uri'):
+                            audio_src = file_data['uri']
+                            print(f"Using URI from file data: {audio_src}")
+                    else:
+                        # Try to convert the dictionary to a readable format
+                        import json
+                        error_msg = f"Unsupported audio format: {json.dumps(content)[:100]}..."
+                        print(error_msg)
+                        me.text(error_msg)
+                        return
+                else:
+                    # For string content
+                    print(f"Processing audio content: {'Data URI' if isinstance(content, str) and content.startswith('data:') else 'Base64' if isinstance(content, str) and '/message/file' not in content else 'File URL'}")
+                    
+                    # Ensure proper data URI format for string content
+                    if isinstance(content, str):
+                        if '/message/file' not in content and not content.startswith('data:'):
+                            # This is a base64 string that needs a data URI prefix
+                            audio_src = 'data:audio/mpeg;base64,' + content
+                            print(f"Converted to data URI, starts with: {audio_src[:50]}...")
+                        else:
+                            audio_src = content
+                
+                if not audio_src:
+                    print("Could not extract audio source from content")
+                    me.text("Error: Could not process audio content")
+                    return
                 
                 # Create an HTML5 audio player element with sandboxed mode to avoid warnings
                 # Added fallback text in case audio can't be played
                 me.html(
                     f'''
                     <div style="display: flex; flex-direction: column; align-items: center;">
-                        <audio controls src="{content}" style="max-width: 300px; margin: 5px 0;">
+                        <audio controls src="{audio_src}" style="max-width: 300px; margin: 5px 0;">
                             Your browser does not support the audio element.
                         </audio>
                         <span style="font-size: 12px; color: #666;">Audio message</span>
@@ -87,24 +122,56 @@ def chat_box(
                     mode='sandboxed',
                 )
             else:
-                me.markdown(
-                    content,
-                    style=me.Style(
-                        font_family='Google Sans',
-                        box_shadow=(
-                            '0 1px 2px 0 rgba(60, 64, 67, 0.3), '
-                            '0 1px 3px 1px rgba(60, 64, 67, 0.15)'
+                # Handle both string and dictionary content types
+                if isinstance(content, dict):
+                    # Convert dictionary to readable format for display
+                    import json
+                    try:
+                        formatted_content = json.dumps(content, indent=2)
+                        me.code(
+                            formatted_content,
+                            language="json",
+                            style=me.Style(
+                                font_family='Roboto Mono, monospace',
+                                box_shadow=(
+                                    '0 1px 2px 0 rgba(60, 64, 67, 0.3), '
+                                    '0 1px 3px 1px rgba(60, 64, 67, 0.15)'
+                                ),
+                                padding=me.Padding(top=5, left=15, right=15, bottom=5),
+                                margin=me.Margin(top=5, left=0, right=0, bottom=5),
+                                background=(
+                                    me.theme_var('primary-container')
+                                    if role == 'user'
+                                    else me.theme_var('secondary-container')
+                                ),
+                                border_radius=15,
+                                max_height="400px",
+                                overflow="auto",
+                            ),
+                        )
+                    except Exception as e:
+                        print(f"Error formatting dictionary content: {e}")
+                        me.text(f"Error displaying content: {str(e)}")
+                else:
+                    # Regular string content 
+                    me.markdown(
+                        content,
+                        style=me.Style(
+                            font_family='Google Sans',
+                            box_shadow=(
+                                '0 1px 2px 0 rgba(60, 64, 67, 0.3), '
+                                '0 1px 3px 1px rgba(60, 64, 67, 0.15)'
+                            ),
+                            padding=me.Padding(top=1, left=15, right=15, bottom=1),
+                            margin=me.Margin(top=5, left=0, right=0, bottom=5),
+                            background=(
+                                me.theme_var('primary-container')
+                                if role == 'user'
+                                else me.theme_var('secondary-container')
+                            ),
+                            border_radius=15,
                         ),
-                        padding=me.Padding(top=1, left=15, right=15, bottom=1),
-                        margin=me.Margin(top=5, left=0, right=0, bottom=5),
-                        background=(
-                            me.theme_var('primary-container')
-                            if role == 'user'
-                            else me.theme_var('secondary-container')
-                        ),
-                        border_radius=15,
-                    ),
-                )
+                    )
     if progress_bar:
         with me.box(
             style=me.Style(
