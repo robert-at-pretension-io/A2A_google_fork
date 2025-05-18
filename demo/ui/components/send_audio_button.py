@@ -1,6 +1,5 @@
 import mesop as me
-from state.state import AppState
-from components.audio_recorder import AudioRecorderState
+from state.state import AppState, AudioRecorderState
 
 async def send_audio_click(e: me.ClickEvent):
     """Handle send audio button click"""

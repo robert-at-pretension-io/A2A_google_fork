@@ -10,6 +10,17 @@ from pydantic.dataclasses import dataclass
 ContentPart = str | dict[str, Any]
 
 
+@me.stateclass
+class AudioRecorderState:
+    """State for audio recorder component"""
+    
+    is_recording: bool = False
+    audio_blob: str = ""  # Base64 encoded audio data
+    recording_duration: int = 0  # in seconds
+    audio_mime_type: str = "audio/wav"
+    filename: str = ""
+
+
 @dataclass
 class StateConversation:
     """StateConversation provides mesop state compliant view of a conversation"""

@@ -75,6 +75,11 @@ class ConversationClient:
         self, payload: ListMessageRequest
     ) -> ListMessageResponse:
         return ListMessageResponse(**await self._send_request(payload))
+        
+    async def list_message(
+        self, payload: ListMessageRequest
+    ) -> ListMessageResponse:
+        return await self.list_messages(payload)
 
     async def get_pending_messages(
         self, payload: PendingMessageRequest
@@ -83,6 +88,9 @@ class ConversationClient:
 
     async def list_tasks(self, payload: ListTaskRequest) -> ListTaskResponse:
         return ListTaskResponse(**await self._send_request(payload))
+        
+    async def list_task(self, payload: ListTaskRequest) -> ListTaskResponse:
+        return await self.list_tasks(payload)
 
     async def register_agent(
         self, payload: RegisterAgentRequest
@@ -91,6 +99,9 @@ class ConversationClient:
 
     async def list_agents(self, payload: ListAgentRequest) -> ListAgentResponse:
         return ListAgentResponse(**await self._send_request(payload))
+        
+    async def list_agent(self, payload: ListAgentRequest) -> ListAgentResponse:
+        return await self.list_agents(payload)
         
     async def delete_agent(self, payload: DeleteAgentRequest) -> DeleteAgentResponse:
         return DeleteAgentResponse(**await self._send_request(payload))

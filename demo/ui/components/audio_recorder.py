@@ -1,17 +1,7 @@
 import time
 import uuid
 import mesop as me
-from state.state import AppState, SettingsState
-
-@me.stateclass
-class AudioRecorderState:
-    """State for audio recorder component"""
-    
-    is_recording: bool = False
-    audio_blob: str = ""  # Base64 encoded audio data
-    recording_duration: int = 0  # in seconds
-    audio_mime_type: str = "audio/wav"
-    filename: str = ""
+from state.state import AppState, SettingsState, AudioRecorderState
 
 def _gen_filename():
     """Generate a unique filename for audio recording"""
